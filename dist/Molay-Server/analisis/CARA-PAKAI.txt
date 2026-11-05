@@ -1,0 +1,108 @@
+CARA PAKAI - ANALISIS LOG LAB
+=============================
+
+Folder ini berisi alat untuk mengubah file activities.jsonl (log dari
+Molay Server) menjadi laporan analisis aktivitas siswa yang siap dibaca,
+lengkap dengan pengiriman otomatis ke Google Drive.
+
+
+LANGKAH SINGKAT
+---------------
+1. Jalankan MolayServer-Sekar7.exe (di folder induk).
+2. Jalankan MolayClient-Sekar7.exe di PC siswa, login, lalu pakai
+   komputer seperti biasa selama sesi lab.
+3. Setelah sesi selesai, klik dua kali:  Analisis-Log-Lab.bat
+4. Laporan terbuka di browser, dan salinannya otomatis masuk ke
+   Google Drive (bila Drive Desktop aktif).
+
+
+FILE YANG DIHASILKAN
+--------------------
+laporan_aktivitas_lab.html   -> laporan lengkap, bisa dibuka di browser
+                                dan dicetak (Ctrl+P) jadi PDF
+laporan_aktivitas_lab.md     -> versi teks/Markdown
+laporan_aktivitas_lab_ringkasan.json -> angka mentah untuk diolah lagi
+
+
+SIMPAN OTOMATIS KE GOOGLE DRIVE
+-------------------------------
+Alat ini TIDAK memakai API Google, jadi tidak perlu login OAuth atau
+kunci rahasia. Caranya memakai folder sinkron Google Drive Desktop:
+
+1. Pasang Google Drive Desktop:
+   https://www.google.com/drive/download/
+2. Login dengan akun Google Anda, tunggu sampai folder "My Drive"
+   muncul di komputer.
+3. Jalankan:  Analisis-Log-Lab.bat
+   Laporan akan disalin ke:
+      My Drive\Lab Komputer\Laporan\
+   beserta arsip log mentah:
+      My Drive\Lab Komputer\Laporan\log-mentah\activities_YYYY-MM-DD.jsonl
+
+Drive Desktop lalu mengunggahnya sendiri ke cloud. Selama Drive
+berjalan, ini terjadi sepenuhnya otomatis.
+
+Cek apakah folder Drive sudah terdeteksi:
+   python drive_sync.py --detect
+
+Kalau folder Drive ada di lokasi tidak umum, tentukan manual:
+   python drive_sync.py --set-folder "X:\path\My Drive"
+   (tersimpan permanen di drive_config.json)
+
+Atur nama subfolder di dalam Drive lewat drive_config.json:
+   {
+     "folder": "",                        <- kosong = deteksi otomatis
+     "subfolder": "Lab Komputer/Laporan",
+     "arsip_log": true                    <- false = jangan arsipkan log
+   }
+
+
+JADWAL OTOMATIS (TANPA KLIK SAMA SEKALI)
+----------------------------------------
+Klik dua kali:  Pasang-Jadwal-Harian.bat
+Masukkan jam, misalnya 15:30. Setiap hari pada jam itu laporan dibuat
+dan dikirim ke Drive.
+
+Batalkan jadwal: jalankan file yang sama, ketik HAPUS.
+
+Catatan: komputer harus menyala pada jam tersebut. Kalau lab hanya
+dipakai sesekali, lebih praktis klik Analisis-Log-Lab.bat manual.
+
+
+OPSI LANJUTAN (lewat Command Prompt)
+------------------------------------
+  python analyze_activities.py --file "..\activities.jsonl"
+  python analyze_activities.py --drive auto     (kirim ke Drive)
+  python analyze_activities.py --drive "D:\My Drive"  (folder tertentu)
+  python analyze_activities.py --gap 20         (jeda pemisah sesi 20 menit)
+  python analyze_activities.py --top 30         (tampilkan 30 aplikasi teratas)
+
+Kalau Drive sedang mati, analisis tetap jalan normal dan laporan tetap
+tersimpan lokal; hanya baris "Drive: tidak tersinkron" yang muncul.
+
+
+CATATAN PENTING
+---------------
+- File activities.jsonl BARU dibuat oleh server setelah ada aktivitas
+  siswa yang tercatat. Kalau file itu belum ada, alat ini akan
+  menampilkan pesan dan berhenti dengan aman.
+- activities_demo_SIMULASI.jsonl berisi DATA FIKTIF untuk contoh.
+  Jangan pernah dianggap sebagai data siswa sungguhan.
+- laporan_CONTOH_SIMULASI.html adalah contoh hasil dari data fiktif
+  tersebut, berguna untuk melihat bentuk laporan sebelum sesi pertama.
+- Membutuhkan Python 3 (https://www.python.org/downloads/), centang
+  "Add Python to PATH" saat instalasi.
+
+
+CARA KERJA PERHITUNGAN
+----------------------
+- Sesi: rangkaian aktivitas per siswa per PC. Bila ada jeda lebih dari
+  15 menit, dihitung sebagai sesi baru.
+- Durasi aplikasi: diestimasi dari selisih waktu antar-aktivitas
+  (maksimal 10 menit per potongan), jadi bersifat perkiraan, bukan
+  pengukuran presisi.
+- Kategori Belajar/Hiburan: ditentukan dari nama aplikasi dan judul
+  jendela. Browser dinilai dari judul tab-nya, sehingga YouTube untuk
+  musik belajar tetap terhitung hiburan.
+- BLOCKED / INSTALLER adalah PERCOBAAN, bukan bukti program berhasil
+  terpasang. Selalu konfirmasi ke siswa sebelum menyimpulkan.

@@ -1,0 +1,27 @@
+PANDUAN KOMPUTER KLIEN / SISWA - MOLAY SEKAR7
+=============================================
+
+1. Cara Pemasangan di PC Siswa:
+   - Copy folder "Molay-Client" ini ke komputer siswa (misal di C:\Molay-Client atau Desktop).
+
+2. Konfigurasi Alamat Server Guru (Mendukung Dual Mode: LAN & Cloudflare Tunnel):
+   - Buka file "server_ip.txt" menggunakan Notepad.
+   - Anda bisa memasukkan:
+     A. Mode LAN Saja:
+        192.168.1.50:1916
+     B. Mode Cloudflare Tunnel Saja:
+        lab.domainanda.com
+     C. DUAL MODE (Saling Melengkapi - Prioritas LAN, Otomatis Beralih ke Tunnel jika di Luar Lab):
+        192.168.1.50:1916
+        lab.domainanda.com
+   - Simpan file.
+
+3. Cara Menjalankan:
+   - Klik ganda "Jalankan-Molay-Client.bat" (atau langsung jalankan "MolayClient-Sekar7.exe").
+   - Layar akan langsung terkunci dengan tampilan "MOLAY SEKAR7".
+   - Klien otomatis mendeteksi apakah terhubung via LAN atau Cloudflare Tunnel.
+   - Siswa harus memasukkan Username & Password untuk membuka desktop.
+
+4. (Opsional) Mengunci Otomatis Saat PC Dihidupkan:
+   - Cukup klik kanan file "Pasang-Otomatis-Saat-Boot.bat" dan pilih "Run".
+   - Setiap kali Windows menyala, Molay Sekar7 akan langsung aktif dan mengunci layar!

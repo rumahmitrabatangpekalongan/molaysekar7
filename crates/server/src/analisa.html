@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Laporan Analisa Aktivitas - Molay Sekar7</title>
+  <style>
+    :root {
+      --bg-main: #0f172a;
+      --bg-card: #1e293b;
+      --bg-card-hover: #334155;
+      --bg-soft: #172033;
+      --border-color: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --primary: #38bdf8;
+      --primary-hover: #0284c7;
+      --green: #22c55e;
+      --red: #ef4444;
+      --amber: #f59e0b;
+      --violet: #a78bfa;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background: var(--bg-main); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; }
+    a { color: var(--primary); }
+
+    header {
+      background: #1e293b; border-bottom: 1px solid var(--border-color);
+      padding: 12px 24px; display: flex; justify-content: space-between; align-items: center;
+      position: sticky; top: 0; z-index: 50; gap: 16px; flex-wrap: wrap;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; font-size: 1.15rem; font-weight: 700; color: var(--primary); }
+    .brand small { color: var(--text-muted); font-weight: 600; font-size: .78rem; display: block; }
+    .header-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+    .btn {
+      background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main);
+      padding: 8px 14px; border-radius: 8px; cursor: pointer; font-size: .85rem; font-weight: 600;
+      display: inline-flex; align-items: center; gap: 7px; transition: all .15s; text-decoration: none;
+    }
+    .btn:hover { background: var(--bg-card-hover); }
+    .btn-primary { background: #0284c7; border-color: #0284c7; }
+    .btn-primary:hover { background: #0369a1; }
+    .btn-ghost { background: transparent; }
+
+    main { padding: 22px 24px 60px; max-width: 1280px; width: 100%; margin: 0 auto; flex: 1; }
+
+    .filter-bar {
+      background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px;
+      padding: 14px 16px; display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 20px;
+    }
+    .field { display: flex; flex-direction: column; gap: 5px; }
+    .field label { font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); font-weight: 700; }
+    .field select, .field input {
+      background: #0f172a; border: 1px solid var(--border-color); color: var(--text-main);
+      padding: 9px 12px; border-radius: 8px; font-size: .88rem; min-width: 160px;
+    }
+    .field input.wide { min-width: 230px; }
+
+    section.card {
+      background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px;
+      padding: 18px 20px; margin-bottom: 18px;
+    }
+    section.card > h2 { font-size: 1rem; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+    section.card > p.sub { color: var(--text-muted); font-size: .8rem; margin-bottom: 14px; }
+
+    .kv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+    .kv { background: var(--bg-soft); border: 1px solid var(--border-color); border-radius: 10px; padding: 11px 13px; }
+    .kv .k { font-size: .7rem; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); font-weight: 700; margin-bottom: 4px; }
+    .kv .v { font-size: .9rem; line-height: 1.45; word-break: break-word; }
+
+    .stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 18px; }
+    .stat { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 14px 16px; }
+    .stat .num { font-size: 1.55rem; font-weight: 800; color: var(--primary); line-height: 1.1; }
+    .stat .lbl { font-size: .74rem; color: var(--text-muted); margin-top: 5px; font-weight: 600; }
+
+    .table-wrap { overflow-x: auto; border: 1px solid var(--border-color); border-radius: 10px; }
+    table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+    thead th {
+      background: #0f172a; color: var(--text-muted); text-align: left; padding: 10px 12px;
+      font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; white-space: nowrap;
+      border-bottom: 1px solid var(--border-color); position: sticky; top: 0;
+    }
+    tbody td { padding: 10px 12px; border-bottom: 1px solid rgba(51, 65, 85, .6); vertical-align: top; }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background: rgba(51, 65, 85, .35); }
+    td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .mono { font-family: 'Consolas', 'Courier New', monospace; font-size: .82rem; }
+
+    .badge { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: .72rem; font-weight: 700; white-space: nowrap; }
+    .b-green { background: rgba(34,197,94,.16); color: #4ade80; border: 1px solid rgba(34,197,94,.4); }
+    .b-red { background: rgba(239,68,68,.16); color: #f87171; border: 1px solid rgba(239,68,68,.4); }
+    .b-amber { background: rgba(245,158,11,.16); color: #fbbf24; border: 1px solid rgba(245,158,11,.4); }
+    .b-slate { background: rgba(148,163,184,.14); color: #cbd5e1; border: 1px solid rgba(148,163,184,.35); }
+    .b-blue { background: rgba(56,189,248,.14); color: #7dd3fc; border: 1px solid rgba(56,189,248,.4); }
+    .b-violet { background: rgba(167,139,250,.16); color: #c4b5fd; border: 1px solid rgba(167,139,250,.4); }
+
+    .bar-track { background: #0f172a; border-radius: 999px; height: 7px; overflow: hidden; min-width: 90px; }
+    .bar-fill { height: 100%; border-radius: 999px; }
+
+    .empty {
+      text-align: center; padding: 40px 20px; color: var(--text-muted);
+      border: 1px dashed var(--border-color); border-radius: 12px; background: var(--bg-soft);
+    }
+    .empty strong { display: block; color: var(--text-main); font-size: 1.05rem; margin-bottom: 6px; }
+
+    .notice {
+      border-radius: 10px; padding: 13px 16px; font-size: .86rem; line-height: 1.55;
+      border: 1px solid rgba(245,158,11,.45); background: rgba(245,158,11,.1); color: #fde68a;
+      margin-bottom: 14px;
+    }
+    .notice.red { border-color: rgba(239,68,68,.45); background: rgba(239,68,68,.1); color: #fca5a5; }
+    .notice.blue { border-color: rgba(56,189,248,.4); background: rgba(56,189,248,.08); color: #bae6fd; }
+
+    textarea {
+      width: 100%; min-height: 130px; background: #0f172a; color: var(--text-main);
+      border: 1px solid var(--border-color); border-radius: 10px; padding: 12px 14px;
+      font-size: .87rem; line-height: 1.55; resize: vertical; font-family: inherit;
+    }
+    .draf-print { display: none; white-space: pre-wrap; font-size: .87rem; line-height: 1.6; }
+    .hitl-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+    .checkline { display: flex; gap: 9px; align-items: flex-start; font-size: .84rem; color: var(--text-muted); margin-top: 14px; line-height: 1.5; }
+    .checkline input { margin-top: 3px; width: 16px; height: 16px; accent-color: #0284c7; cursor: pointer; }
+
+    .stamp {
+      display: none; margin-top: 12px; padding: 11px 15px; border-radius: 10px;
+      background: rgba(34,197,94,.12); border: 1px solid rgba(34,197,94,.45); color: #86efac;
+      font-size: .85rem; font-weight: 700;
+    }
+    .stamp.show { display: block; }
+
+    footer { padding: 18px 24px 40px; text-align: center; color: #64748b; font-size: .76rem; line-height: 1.6; }
+
+    /* ---- Layar login ---- */
+    #loginOverlay {
+      display: none; position: fixed; inset: 0; background: #0b1120; z-index: 99999;
+      justify-content: center; align-items: center; padding: 20px;
+    }
+    #loginOverlay.show { display: flex; }
+    .login-card {
+      background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 34px 30px;
+      max-width: 400px; width: 100%; box-shadow: 0 25px 50px -12px rgba(0,0,0,.7); text-align: center;
+    }
+    .login-card h2 { font-size: 1.3rem; margin-bottom: 6px; }
+    .login-card p.hint { color: var(--text-muted); font-size: .84rem; margin-bottom: 20px; }
+    .login-card input {
+      width: 100%; padding: 11px 14px; background: #0f172a; border: 1px solid #334155;
+      border-radius: 8px; color: #fff; font-size: .95rem; margin-bottom: 12px;
+    }
+    .login-card button {
+      width: 100%; padding: 13px; background: #0284c7; color: #fff; border: none;
+      border-radius: 8px; font-weight: 700; font-size: .95rem; cursor: pointer;
+    }
+    .login-err {
+      display: none; background: rgba(239,68,68,.14); border: 1px solid #ef4444; color: #fca5a5;
+      padding: 10px 14px; border-radius: 8px; font-size: .84rem; margin-bottom: 14px; text-align: left;
+    }
+
+    /* ---- Cetak ---- */
+    @media print {
+      :root { --bg-main:#fff; --bg-card:#fff; --bg-soft:#f8fafc; --border-color:#cbd5e1; --text-main:#0f172a; --text-muted:#475569; --primary:#0369a1; }
+      @page { size: A4; margin: 12mm; }
+      body { background: #fff; color: #0f172a; }
+      header, .filter-bar, .hitl-actions, .checkline, #loginOverlay, footer { display: none !important; }
+      textarea { display: none !important; }
+      .draf-print { display: block !important; border: 1px solid #cbd5e1; border-radius: 10px; padding: 12px 14px; background: #fff; color: #0f172a; }
+      main { padding: 0; max-width: 100%; }
+      .table-wrap { overflow: visible !important; border-color: #cbd5e1; }
+      table { font-size: .74rem; }
+      tbody td, thead th { padding: 6px 8px; }
+      section.card { break-inside: avoid; border: 1px solid #cbd5e1; box-shadow: none; margin-bottom: 10px; padding: 12px 14px; }
+      .stat-row { break-inside: avoid; }
+      .stat { border: 1px solid #cbd5e1; }
+      thead th { background: #f1f5f9; color: #0f172a; position: static; }
+      tbody td { border-bottom: 1px solid #e2e8f0; }
+      .stat .num { color: #0369a1; }
+      .notice { border: 1px solid #f59e0b; background: #fffbeb; color: #78350f; }
+      .badge { border: 1px solid #94a3b8 !important; color: #0f172a !important; background: #f1f5f9 !important; }
+      a { color: #0f172a; text-decoration: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="loginOverlay">
+  <div class="login-card">
+    <h2>Laporan Analisa Aktivitas</h2>
+    <p class="hint">Halaman ini memuat data aktivitas layar siswa. Hanya akun Guru/Admin yang diizinkan.</p>
+    <div id="loginErr" class="login-err"></div>
+    <input type="text" id="loginUser" placeholder="Username Guru / Admin" autocomplete="username">
+    <input type="password" id="loginPass" placeholder="Password" autocomplete="current-password">
+    <button onclick="doLogin()">Masuk</button>
+    <p class="hint" style="margin: 16px 0 0;">Data siswa dilindungi — jangan bagikan tautan ini ke siswa.</p>
+  </div>
+</div>
+
+<header>
+  <div class="brand">
+    <span>&#128202;</span>
+    <div>
+      Laporan Analisa Aktivitas
+      <small>Molay Sekar7 &middot; Pengawas Lab</small>
+    </div>
+  </div>
+  <div class="header-actions">
+    <span id="userChip" class="badge b-blue" style="display:none;"></span>
+    <a href="/" class="btn btn-ghost">&#8592; Dashboard</a>
+    <button class="btn" onclick="loadData()">&#8635; Muat Ulang</button>
+    <button class="btn btn-primary" onclick="window.print()">&#128424; Cetak / PDF</button>
+  </div>
+</header>
+
+<main>
+  <div class="filter-bar">
+    <div class="field">
+      <label for="fTanggal">Tanggal Sesi</label>
+      <select id="fTanggal" onchange="loadData()"></select>
+    </div>
+    <div class="field">
+      <label for="fZona">Zona Waktu Lab</label>
+      <select id="fZona" onchange="loadData()">
+        <option value="WIB">WIB (UTC+7)</option>
+        <option value="WITA">WITA (UTC+8)</option>
+        <option value="WIT">WIT (UTC+9)</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="fBelajar">Jam Belajar</label>
+      <input type="text" id="fBelajar" class="wide" value="08:00-11:30,13:00-16:00" onchange="loadData()">
+    </div>
+    <div class="field">
+      <label for="fIstirahat">Jam Istirahat / Jumat</label>
+      <input type="text" id="fIstirahat" value="11:30-13:00" onchange="loadData()">
+    </div>
+    <button class="btn btn-primary" onclick="loadData()">Analisa</button>
+  </div>
+
+  <div id="content">
+    <div class="empty"><strong>Memuat data&hellip;</strong>Mohon tunggu sebentar.</div>
+  </div>
+
+  <footer>
+    Sumber data: <span class="mono">activities.jsonl</span> &middot; Molay Sekar7 Server &middot;
+    Durasi bersifat perkiraan (selisih antar-event, maks. 10 menit per potongan).<br>
+    Halaman ini tidak mengirim email, tidak menjatuhkan sanksi, dan tidak memblokir akun secara otomatis.
+  </footer>
+</main>
+
+<script>
+const TOKEN_KEY = 'molay_auth_token';
+let token = localStorage.getItem(TOKEN_KEY) || '';
+let userInfo = null;
+let lastData = null;
+let approved = false;
+// Dukungan tautan langsung: /analisaaktivitas?token=...&tanggal=2026-10-27
+let pendingTanggal = new URLSearchParams(location.search).get('tanggal') || '';
+
+const BULAN = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function fmtDur(m) {
+  if (m == null) return '-';
+  if (m >= 60) {
+    const h = Math.floor(m / 60), r = Math.round(m % 60);
+    return r ? h + ' j ' + r + ' m' : h + ' j';
+  }
+  return Math.round(m) + ' m';
+}
+function fmtNum(n) {
+  if (!n) return '0';
+  if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+  if (n >= 1000) return (n / 1000).toFixed(1) + 'k';
+  return n.toLocaleString('id-ID');
+}
+function pct(v) { return (v == null ? 0 : v).toFixed(1).replace('.', ',') + '%'; }
+function tglPanjang(iso) {
+  if (!iso) return '-';
+  const p = iso.split('-');
+  if (p.length !== 3) return iso;
+  return parseInt(p[2], 10) + ' ' + BULAN[parseInt(p[1], 10) - 1] + ' ' + p[0];
+}
+function badgeKategori(k) {
+  const map = { produktif: ['b-green', 'Produktif'], nonproduktif: ['b-red', 'Non-Produktif'],
+                netral: ['b-slate', 'Netral'], pelanggaran: ['b-red', 'Percobaan Blokir'], sistem: ['b-blue', 'Sistem'] };
+  const v = map[k] || ['b-slate', k];
+  return '<span class="badge ' + v[0] + '">' + esc(v[1]) + '</span>';
+}
+function bar(v, color) {
+  const w = Math.max(0, Math.min(100, v));
+  return '<div class="bar-track"><div class="bar-fill" style="width:' + w + '%;background:' + color + '"></div></div>';
+}
+
+/* ---------- fungsi pembantu parser aman ---------- */
+async function safeParseJson(res) {
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch (err) {
+    if (res.status === 403 || res.status === 501 || res.status === 502 || res.status === 504 || text.includes('<!DOCTYPE') || text.includes('<html')) {
+      throw new Error(
+        'Server mengembalikan halaman web (HTML), bukan data JSON (HTTP ' + res.status + '). ' +
+        'Jika membuka lewat domain publik, pastikan Server Molay & Cloudflare Tunnel di PC Guru aktif berjalan. ' +
+        'Atau buka langsung lewat alamat lokal: http://localhost:1916/analisaaktivitas'
+      );
+    }
+    throw new Error('Respon server tidak valid (' + res.status + '): ' + (text.slice(0, 120) || 'Kosong'));
+  }
+}
+
+/* ---------- autentikasi ---------- */
+async function doLogin() {
+  const u = document.getElementById('loginUser').value.trim();
+  const p = document.getElementById('loginPass').value;
+  const err = document.getElementById('loginErr');
+  err.style.display = 'none';
+
+  if (!u || !p) {
+    err.textContent = 'Harap isi username dan password!';
+    err.style.display = 'block';
+    return;
+  }
+
+  const maxRetries = 3;
+  let lastErr = null;
+  let loginSuccess = false;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      if (attempt > 1) {
+        await new Promise(r => setTimeout(r, 400));
+      }
+
+      let res = await fetch('/api/auth/login', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: u, password: p })
+      });
+      // Fallback jika rute /api/ dicegat oleh reverse proxy cloud failover (403, 404, atau 501)
+      if (!res.ok && (res.status === 403 || res.status === 404 || res.status === 501)) {
+        try {
+          const alt = await fetch('/auth/login', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: u, password: p })
+          });
+          if (alt.ok) res = alt;
+        } catch (_) {}
+      }
+      const data = await safeParseJson(res);
+      if (!res.ok || data.status !== 'ok') {
+        throw new Error(data.message || 'Username atau password salah');
+      }
+      token = data.token;
+      localStorage.setItem(TOKEN_KEY, token);
+      userInfo = data.user;
+      document.getElementById('loginOverlay').classList.remove('show');
+      loadData();
+      loginSuccess = true;
+      break;
+    } catch (e) {
+      lastErr = e;
+      // Jika salah password, hentikan retry
+      if (e.message.includes('Username atau password salah') || e.message.includes('Akun ini adalah akun Siswa')) {
+        break;
+      }
+    }
+  }
+
+  if (!loginSuccess && lastErr) {
+    err.innerHTML = esc(lastErr.message) +
+      '<div style="margin-top:10px; padding-top:8px; border-top:1px solid rgba(239,68,68,0.3);">' +
+      '<a href="http://localhost:1916/analisaaktivitas" style="color:#38bdf8; font-weight:600; text-decoration:underline;">' +
+      '&rarr; Buka via Server Lokal (http://localhost:1916/analisaaktivitas)</a></div>';
+    err.style.display = 'block';
+  }
+}
+
+async function ensureAuth() {
+  if (!token) { document.getElementById('loginOverlay').classList.add('show'); return false; }
+  try {
+    let res = await fetch('/api/auth/me?token=' + encodeURIComponent(token));
+    if (!res.ok && (res.status === 403 || res.status === 404)) {
+      try {
+        const alt = await fetch('/auth/me?token=' + encodeURIComponent(token));
+        if (alt.ok) res = alt;
+      } catch (_) {}
+    }
+    if (!res.ok) throw new Error('expired');
+    const data = await safeParseJson(res);
+    userInfo = data.user;
+    const chip = document.getElementById('userChip');
+    chip.textContent = userInfo.full_name + ' (' + userInfo.role + ')';
+    chip.style.display = 'inline-block';
+    return true;
+  } catch (e) {
+    localStorage.removeItem(TOKEN_KEY);
+    token = '';
+    document.getElementById('loginOverlay').classList.add('show');
+    return false;
+  }
+}
+
+/* ---------- muat data ---------- */
+async function loadData() {
+  if (!await ensureAuth()) return;
+  const params = new URLSearchParams({
+    token: token,
+    zona: document.getElementById('fZona').value,
+    belajar: document.getElementById('fBelajar').value,
+    istirahat: document.getElementById('fIstirahat').value
+  });
+  const tgl = pendingTanggal || document.getElementById('fTanggal').value;
+  if (tgl) params.set('tanggal', tgl);
+
+  document.getElementById('content').innerHTML =
+    '<div class="empty"><strong>Menganalisa log&hellip;</strong>Menghitung durasi per siswa.</div>';
+
+  try {
+    let res = await fetch('/api/analisa?' + params.toString());
+    if (!res.ok && (res.status === 403 || res.status === 404)) {
+      try {
+        const alt = await fetch('/analisa/data?' + params.toString());
+        if (alt.ok) res = alt;
+      } catch (_) {}
+    }
+    if (res.status === 401) { localStorage.removeItem(TOKEN_KEY); token = ''; await ensureAuth(); return; }
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await safeParseJson(res);
+    lastData = data;
+    approved = false;
+    render(data);
+  } catch (e) {
+    document.getElementById('content').innerHTML =
+      '<div class="empty"><strong>Gagal memuat analisis.</strong>' + esc(e.message) +
+      '<div style="margin-top:12px;"><a href="http://localhost:1916/analisaaktivitas" class="btn btn-primary">&rarr; Buka via Server Lokal (localhost:1916)</a></div></div>';
+  }
+}
+
+/* ---------- render ---------- */
+function render(d) {
+  const m = d.meta, v = d.validasi;
+
+  // dropdown tanggal
+  const sel = document.getElementById('fTanggal');
+  const daftar = m.tanggal_tersedia || [];
+  const cur = pendingTanggal || sel.value || m.tanggal;
+  let opsi = daftar.map(t =>
+    '<option value="' + esc(t) + '">' + esc(tglPanjang(t)) + '</option>'
+  );
+  if (cur && daftar.indexOf(cur) < 0) {
+    opsi.unshift('<option value="' + esc(cur) + '">' + esc(tglPanjang(cur)) + ' (tidak ada log)</option>');
+  }
+  sel.innerHTML = opsi.length ? opsi.join('') : '<option value="">(tidak ada log)</option>';
+  if (cur) sel.value = cur;
+  pendingTanggal = '';
+
+  if (!m.event_terpakai) {
+    const saran = daftar.length
+      ? '<div style="margin-top:12px;font-size:.82rem">Tanggal yang tersedia di log: ' +
+        daftar.slice(0, 10).map(t => '<a href="#" onclick="pilihTanggal(\'' + esc(t) + '\');return false;">' + esc(tglPanjang(t)) + '</a>').join(' &middot; ') + '</div>'
+      : '';
+    document.getElementById('content').innerHTML =
+      '<div class="empty"><strong>Data log tidak ditemukan.</strong>' +
+      'Tidak ada aktivitas tercatat pada tanggal <b>' + esc(tglPanjang(m.tanggal)) + '</b> (' + esc(m.zona) + ').<br>' +
+      'Sistem tidak menebak aktivitas siswa. Pastikan sesi lab sudah berjalan dan klien sudah terhubung.' +
+      saran + '</div>';
+    return;
+  }
+
+  const totalMenit = d.komposisi.reduce((a, b) => a + b.menit, 0);
+  const warna = { produktif: '#22c55e', nonproduktif: '#ef4444', netral: '#94a3b8', pelanggaran: '#f97316', sistem: '#38bdf8' };
+
+  let html = '';
+
+  // ---- kartu statistik ----
+  html += '<div class="stat-row">' +
+    stat(d.siswa.length, 'Siswa terpantau') +
+    stat(m.jumlah_pc, 'PC / klien') +
+    stat(fmtNum(m.total_keystrokes || 0), '⌨️ Total Ketikan Lab') +
+    stat(fmtNum(m.total_mouse_clicks || 0), '🖱️ Total Klik Mouse') +
+    stat(fmtDur(totalMenit), 'Total durasi') +
+    stat(fmtDur(v.total_nonproduktif_jam_belajar), 'Non-produktif jam belajar') +
+    '</div>';
+
+  // ---- 1. dekomposisi 4W ----
+  html += '<section class="card"><h2>&#128203; 1. Dekomposisi Rencana Monitoring (4W)</h2>' +
+    '<p class="sub">Parameter yang benar-benar dipakai mesin analisis untuk laporan ini.</p><div class="kv-grid">' +
+    kv('Who (Target Siswa / Lab)', d.siswa.length + ' akun siswa pada ' + m.jumlah_pc + ' PC: ' +
+       d.siswa.map(s => esc(s.username) + ' (' + esc(s.pc.join(', ')) + ')').join(', ')) +
+    kv('What (Fokus Analisis)', 'Pemakaian aplikasi produktif vs non-produktif, durasi, total ketikan (keystrokes) & klik mouse ala WhatPulse, percobaan blokir, jeda idle') +
+    kv('When (Rentang Waktu)', tglPanjang(m.tanggal) + ', ' + esc(m.mulai || '-') + '&ndash;' + esc(m.selesai || '-') + ' ' + esc(m.zona) +
+       ' &middot; jam belajar ' + esc(m.jendela_belajar.join(' & ')) + ', istirahat ' + esc(m.jendela_istirahat)) +
+    kv('Where (Lokasi / Ruang Lab)', 'Lab Komputer &mdash; log klien Molay (PC siswa), bukan sesi remote') +
+    kv('Sumber Perintah', 'Permintaan guru/instruktur melalui Dashboard Web (sesi login: ' + esc(userInfo ? userInfo.full_name : '-') + ')') +
+    '</div></section>';
+
+  // ---- 2. ringkasan analisis ----
+  html += '<section class="card"><h2>&#128202; 2. Ringkasan Analisis Pemakaian</h2>' +
+    '<p class="sub">Durasi diatribusikan per-event. Browser dinilai dari judul tab, bukan hanya nama aplikasi.</p>' +
+    '<div class="table-wrap"><table><thead><tr><th>Kategori</th><th class="num">Total Durasi</th><th class="num">Persentase</th><th style="width:140px">Proporsi</th><th>Status</th></tr></thead><tbody>';
+
+  d.komposisi.forEach(k => {
+    let status = '-';
+    if (k.kategori === 'produktif') status = '<span class="badge b-green">Sesuai silabus</span>';
+    else if (k.kategori === 'nonproduktif') status = '<span class="badge b-amber">Jam belajar / istirahat</span>';
+    else if (k.kategori === 'pelanggaran') status = '<span class="badge b-red">Percobaan &mdash; bukan bukti terpasang</span>';
+    else if (k.kategori === 'sistem') status = '<span class="badge b-blue">Kendala teknis</span>';
+    html += '<tr><td>' + badgeKategori(k.kategori) + '</td><td class="num">' + fmtDur(k.menit) +
+      '</td><td class="num">' + pct(k.persen) + '</td><td>' + bar(k.persen, warna[k.kategori] || '#94a3b8') +
+      '</td><td>' + status + '</td></tr>';
+  });
+  html += '</tbody></table></div></section>';
+
+  // ---- 3. rincian per siswa ----
+  html += '<section class="card"><h2>&#128101; 3. Rincian per Siswa &amp; Keaktifan Komputer</h2>' +
+    '<p class="sub">Metrik ketikan &amp; klik mouse membantu guru membedakan siswa yang tekun praktek vs bengong/idle.</p>' +
+    '<div class="table-wrap"><table><thead><tr><th>Siswa</th><th>PC</th><th>Sesi</th><th class="num">Durasi</th>' +
+    '<th class="num" style="color:#c7d2fe">⌨️ Ketikan</th><th class="num" style="color:#a5f3fc">🖱️ Klik</th><th class="num">Kecepatan</th>' +
+    '<th class="num">Produktif</th><th class="num">Non-Produktif</th><th class="num">Non-prod. jam belajar</th>' +
+    '<th class="num">Non-prod. istirahat</th><th class="num">Percobaan</th><th>Status</th></tr></thead><tbody>';
+
+  d.siswa.forEach(s => {
+    let st;
+    if (s.nonproduktif_jam_belajar >= 30) st = '<span class="badge b-red">Perlu perhatian</span>';
+    else if (s.nonproduktif_jam_belajar >= 15) st = '<span class="badge b-amber">Pantau</span>';
+    else if (s.percobaan_blokir > 0) st = '<span class="badge b-amber">Percobaan blokir</span>';
+    else st = '<span class="badge b-green">Sesuai</span>';
+    html += '<tr><td><b>' + esc(s.username) + '</b></td><td class="mono">' + esc(s.pc.join(', ')) + '</td>' +
+      '<td class="mono">' + esc(s.mulai) + '&ndash;' + esc(s.selesai) + '</td>' +
+      '<td class="num">' + fmtDur(s.menit) + '</td>' +
+      '<td class="num" style="color:#c7d2fe;font-weight:700">' + fmtNum(s.keystrokes || 0) + '</td>' +
+      '<td class="num" style="color:#a5f3fc;font-weight:700">' + fmtNum(s.mouse_clicks || 0) + '</td>' +
+      '<td class="num mono" style="color:#94a3b8">' + (s.keystrokes_per_menit ? s.keystrokes_per_menit + '/m' : '-') + '</td>' +
+      '<td class="num" style="color:#4ade80">' + pct(s.persen_produktif) + '</td>' +
+      '<td class="num" style="color:#f87171">' + pct(s.persen_nonproduktif) + '</td>' +
+      '<td class="num">' + fmtDur(s.nonproduktif_jam_belajar) + '</td>' +
+      '<td class="num" style="color:#94a3b8">' + fmtDur(s.nonproduktif_istirahat) + '</td>' +
+      '<td class="num">' + s.percobaan_blokir + '</td><td>' + st + '</td></tr>';
+  });
+  html += '</tbody></table></div>';
+
+  // aplikasi teratas per siswa
+  html += '<div style="margin-top:16px"><p class="sub" style="margin-bottom:8px"><b>Aplikasi teratas per siswa (dengan riwayat ketikan &amp; klik)</b></p>';
+  d.siswa.forEach(s => {
+    if (!s.aplikasi_teratas.length) return;
+    html += '<div style="margin-bottom:9px;font-size:.84rem"><b>' + esc(s.username) + '</b> &mdash; ' +
+      s.aplikasi_teratas.map(a => '<span class="mono">' + esc(a.app) + '</span> ' + fmtDur(a.menit) +
+        (a.keystrokes ? ' <span style="color:#c7d2fe;font-size:.76rem">(⌨️ ' + fmtNum(a.keystrokes) + ')</span>' : '') +
+        (a.mouse_clicks ? ' <span style="color:#a5f3fc;font-size:.76rem">(🖱️ ' + fmtNum(a.mouse_clicks) + ')</span>' : '') +
+        ' <span class="badge b-slate" style="font-size:.66rem">' + esc(a.kategori) + '</span>').join(' &middot; ') +
+      '</div>';
+  });
+  html += '</div></section>';
+
+  // ---- 4. aplikasi keseluruhan ----
+  html += '<section class="card"><h2>&#128421; 4. Aplikasi &amp; Domain Teratas (Seluruh Lab)</h2>' +
+    '<div class="table-wrap"><table><thead><tr><th>Aplikasi / Proses</th><th>Kategori</th><th class="num">Durasi</th>' +
+    '<th class="num" style="color:#c7d2fe">⌨️ Ketikan</th><th class="num" style="color:#a5f3fc">🖱️ Klik</th>' +
+    '<th class="num">Event</th><th class="num">Persentase</th><th style="width:140px">Proporsi</th></tr></thead><tbody>';
+  d.aplikasi.forEach(a => {
+    html += '<tr><td class="mono">' + esc(a.app) + '</td><td>' + badgeKategori(a.kategori) + '</td>' +
+      '<td class="num">' + fmtDur(a.menit) + '</td>' +
+      '<td class="num" style="color:#c7d2fe;font-weight:600">' + fmtNum(a.keystrokes || 0) + '</td>' +
+      '<td class="num" style="color:#a5f3fc;font-weight:600">' + fmtNum(a.mouse_clicks || 0) + '</td>' +
+      '<td class="num">' + a.event + '</td>' +
+      '<td class="num">' + pct(a.persen) + '</td><td>' + bar(a.persen, warna[a.kategori] || '#94a3b8') + '</td></tr>';
+  });
+  html += '</tbody></table></div></section>';
+
+  // ---- 5. percobaan terblokir + idle ----
+  html += '<section class="card"><h2>&#128681; 5. Percobaan Program Terblokir &amp; Jeda</h2>' +
+    '<div class="notice blue">BLOCKED / INSTALLER menandakan <b>percobaan</b> yang diblokir sistem, <b>bukan bukti</b> program berhasil terpasang. Konfirmasi ke siswa sebelum menyimpulkan.</div>';
+
+  if (d.pelanggaran.length) {
+    html += '<div class="table-wrap"><table><thead><tr><th>Waktu</th><th>Siswa</th><th>PC</th><th>Aplikasi</th><th>Judul Jendela (data mentah)</th><th>Jenis</th></tr></thead><tbody>';
+    d.pelanggaran.forEach(p => {
+      const jenis = p.jenis === 'INSTALLER'
+        ? '<span class="badge b-red">Installer</span>' : '<span class="badge b-amber">Diblokir</span>';
+      html += '<tr><td class="mono">' + esc(p.waktu) + '</td><td><b>' + esc(p.username) + '</b></td>' +
+        '<td class="mono">' + esc(p.pc) + '</td><td class="mono">' + esc(p.app) + '</td>' +
+        '<td>' + esc(p.judul) + (p.detail ? '<div style="color:#94a3b8;font-size:.76rem;margin-top:3px">' + esc(p.detail) + '</div>' : '') + '</td>' +
+        '<td>' + jenis + '</td></tr>';
+    });
+    html += '</tbody></table></div>';
+  } else {
+    html += '<div class="empty" style="padding:22px"><strong>Tidak ada percobaan terblokir.</strong>Tidak ditemukan event BLOCKED atau INSTALLER pada tanggal ini.</div>';
+  }
+
+  html += '<p class="sub" style="margin:16px 0 8px"><b>Jeda tanpa aktivitas</b> (lebih dari ' + m.gap_menit + ' menit)</p>';
+  if (d.idle.length) {
+    html += '<div class="table-wrap"><table><thead><tr><th>Siswa</th><th>Dari</th><th>Sampai</th><th class="num">Jeda</th><th>Catatan</th></tr></thead><tbody>';
+    d.idle.forEach(i => {
+      const ket = i.menit >= 60 ? 'Kemungkinan istirahat / keluar ruang' : 'Tidak ada interaksi terdeteksi';
+      html += '<tr><td><b>' + esc(i.username) + '</b></td><td class="mono">' + esc(i.mulai) + '</td>' +
+        '<td class="mono">' + esc(i.selesai) + '</td><td class="num">' + fmtDur(i.menit) + '</td><td>' + esc(ket) + '</td></tr>';
+    });
+    html += '</tbody></table></div>';
+  } else {
+    html += '<div class="empty" style="padding:22px"><strong>Tidak ada jeda panjang.</strong>Aktivitas tercatat cukup rapat sepanjang sesi.</div>';
+  }
+  html += '</section>';
+
+  // ---- 6. validasi kebijakan ----
+  const stBadge = v.status_kebijakan === 'Data log tidak ditemukan'
+    ? '<span class="badge b-slate">Data log tidak ditemukan</span>'
+    : (v.status_kebijakan === 'Sesuai jadwal'
+        ? '<span class="badge b-green">Sesuai jadwal</span>'
+        : '<span class="badge b-red">' + esc(v.status_kebijakan) + '</span>');
+
+  html += '<section class="card"><h2>&#128737; 6. Laporan Validasi &amp; Kebijakan (Secondary Agent)</h2>' +
+    '<p class="sub">Lapisan kedua memeriksa konteks waktu, risiko tindakan, dan keamanan data.</p><div class="kv-grid">' +
+    kv('Status Kebijakan', stBadge) +
+    kv('Konteks Waktu', esc(v.konteks_waktu)) +
+    kv('Analisis Risiko', '<span class="badge b-green">Rendah</span> ' + esc(v.analisis_risiko)) +
+    kv('Keamanan Data', (v.sinyal_injeksi.length
+        ? '<span class="badge b-amber">Waspada</span> ' : '<span class="badge b-green">Aman</span> ') + esc(v.keamanan_data)) +
+    kv('Siswa Terindikasi', v.siswa_terindikasi.length ? v.siswa_terindikasi.map(esc).join(', ') : '<i>Tidak ada</i>') +
+    kv('Siswa Sesuai', v.siswa_bersih.length ? v.siswa_bersih.map(esc).join(', ') : '<i>Tidak ada</i>') +
+    '</div>';
+
+  if (v.sinyal_injeksi.length) {
+    html += '<div class="notice" style="margin-top:14px"><b>Anti prompt injection:</b> judul jendela berikut menyerupai perintah dan telah <b>diabaikan sebagai teks</b> (tidak dieksekusi):<ul style="margin:8px 0 0 18px">' +
+      v.sinyal_injeksi.map(s => '<li class="mono">' + esc(s) + '</li>').join('') + '</ul></div>';
+  }
+
+  html += '<ul style="margin:14px 0 0 18px;font-size:.84rem;color:#94a3b8;line-height:1.7">' +
+    v.catatan.map(c => '<li>' + esc(c) + '</li>').join('') + '</ul></section>';
+
+  // ---- 7. layar konfirmasi (HITL) ----
+  html += '<section class="card"><h2>&#128721; 7. Layar Konfirmasi (Human-in-the-Loop)</h2>' +
+    '<div class="notice red"><b>TINDAKAN BELUM DIEKSEKUSI.</b> Halaman ini hanya menampilkan draf. Server tidak mengirim email, tidak menjatuhkan sanksi, dan tidak memblokir akun secara otomatis. Setiap tindakan lanjutan dilakukan manual oleh guru/instruktur.</div>' +
+    '<div class="table-wrap"><table><tbody>' +
+    hitl('Aksi yang Diusulkan', 'Simpan &amp; cetak laporan evaluasi sesi lab (bukan surat peringatan)') +
+    hitl('Penerima / Sasaran', esc(userInfo ? userInfo.full_name : 'Instruktur / Kepala Lab') + ' &mdash; internal, tidak ke siswa/wali') +
+    hitl('Rekomendasi Tindakan', rekomendasi(v)) +
+    '</tbody></table></div>' +
+    '<p class="sub" style="margin:16px 0 8px"><b>Draf catatan</b> (boleh diedit sebelum dicetak)</p>' +
+    '<textarea id="drafText" oninput="syncDraf()">' + esc(drafTeks(d)) + '</textarea>' +
+    '<div class="draf-print" id="drafPrint"></div>' +
+    '<div class="checkline"><input type="checkbox" id="chkApprove" onchange="toggleApprove()">' +
+    '<label for="chkApprove">Saya instruktur/admin berwenang dan menyetujui draf laporan ini. Saya memahami bahwa menyetujui di sini <b>hanya menandai draf</b> — tidak mengirim apa pun ke siswa atau orang tua.</label></div>' +
+    '<div class="hitl-actions">' +
+    '<button class="btn" onclick="salinDraf()">&#128203; Salin Draf</button>' +
+    '<button class="btn btn-primary" onclick="window.print()">&#128424; Cetak Laporan</button>' +
+    '<button class="btn" onclick="unduhJson()">&#11015; Unduh JSON</button>' +
+    '</div><div class="stamp" id="stamp"></div></section>';
+
+  // ---- 8. audit log ----
+  const now = new Date();
+  const jamAkses = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+  html += '<section class="card"><h2>&#128221; 8. Audit Log</h2><div class="table-wrap"><table><tbody>' +
+    hitl('User &amp; Role', esc(userInfo ? userInfo.full_name + ' (' + userInfo.username + ' / ' + userInfo.role + ')' : '-')) +
+    hitl('Kueri Masuk', 'Analisa aktivitas tanggal ' + esc(tglPanjang(m.tanggal)) + ' &middot; zona ' + esc(m.zona) +
+         ' &middot; jam belajar ' + esc(m.jendela_belajar.join(' & '))) +
+    hitl('Sumber Data', '<span class="mono">' + esc(m.sumber) + '</span> &mdash; ' + m.event_terpakai + ' dari ' + m.total_event +
+         ' event total, ' + esc(m.catatan_durasi)) +
+    hitl('Status Eksekusi', '<span class="badge b-amber">MENUNGGU PERSETUJUAN</span> Belum ada sanksi, email, atau blokir yang dijalankan') +
+    hitl('Security Flag', v.sinyal_injeksi.length
+        ? '<span class="badge b-amber">High-Risk Action Flagged</span> judul mencurigakan dinetralkan sebagai teks'
+        : '<span class="badge b-green">Aman</span> tidak ada sinyal prompt injection') +
+    hitl('Waktu Akses Halaman', jamAkses + ' ' + esc(m.zona) + ' &middot; ' + esc(tglPanjang(m.tanggal))) +
+    '</tbody></table></div></section>';
+
+  document.getElementById('content').innerHTML = html;
+  syncDraf();
+}
+
+function syncDraf() {
+  const t = document.getElementById('drafText');
+  const p = document.getElementById('drafPrint');
+  if (t && p) p.textContent = t.value;
+}
+
+function pilihTanggal(t) {
+  pendingTanggal = t;
+  loadData();
+}
+
+function stat(num, lbl) {
+  return '<div class="stat"><div class="num">' + esc(num) + '</div><div class="lbl">' + esc(lbl) + '</div></div>';
+}
+function kv(k, v) {
+  return '<div class="kv"><div class="k">' + k + '</div><div class="v">' + v + '</div></div>';
+}
+function hitl(k, v) {
+  return '<tr><th style="width:230px;background:transparent;border-bottom:1px solid rgba(51,65,85,.6);vertical-align:top">' +
+    k + '</th><td>' + v + '</td></tr>';
+}
+function rekomendasi(v) {
+  if (!v.siswa_terindikasi.length) return '<span class="badge b-green">Tidak perlu tindakan</span> Lanjutkan pemantauan rutin.';
+  if (v.total_nonproduktif_jam_belajar >= 60) {
+    return '<span class="badge b-amber">Bimbingan lisan</span> Panggil ' + v.siswa_terindikasi.map(esc).join(', ') +
+      ' untuk pembinaan lisan dan konfirmasi percobaan instalasi. <b>Bukan</b> surat peringatan.';
+  }
+  return '<span class="badge b-blue">Pemantauan</span> Beri pengingat lisan singkat kepada ' +
+    v.siswa_terindikasi.map(esc).join(', ') + '.';
+}
+function drafTeks(d) {
+  const m = d.meta, v = d.validasi;
+  const total = d.komposisi.reduce((a, b) => a + b.menit, 0);
+  const prod = (d.komposisi.find(k => k.kategori === 'produktif') || { menit: 0, persen: 0 });
+  const lines = [];
+  lines.push('LAPORAN EVALUASI AKTIVITAS LAB — ' + tglPanjang(m.tanggal) + ' (' + m.mulai + '-' + m.selesai + ' ' + m.zona + ')');
+  lines.push('');
+  lines.push('Ringkasan: ' + d.siswa.length + ' siswa / ' + m.jumlah_pc + ' PC, ' + m.event_terpakai + ' event, total ' + fmtDur(total) + '.');
+  lines.push('Komposisi: produktif ' + pct(prod.persen) + ', non-produktif ' +
+    pct((d.komposisi.find(k => k.kategori === 'nonproduktif') || { persen: 0 }).persen) +
+    ', percobaan terblokir ' + (d.pelanggaran.length) + ' event.');
+  lines.push('');
+  if (v.siswa_terindikasi.length) {
+    lines.push('Perlu perhatian (non-produktif di jam belajar):');
+    d.siswa.filter(s => v.siswa_terindikasi.indexOf(s.username) >= 0).forEach(s => {
+      lines.push('- ' + s.username + ' (' + s.pc.join(', ') + '): non-produktif ' + fmtDur(s.nonproduktif) +
+        ' (' + pct(s.persen_nonproduktif) + '), di jam belajar ' + fmtDur(s.nonproduktif_jam_belajar) +
+        ', percobaan blokir ' + s.percobaan_blokir + 'x.');
+    });
+  } else {
+    lines.push('Tidak ada siswa dengan indikasi pelanggaran jam belajar.');
+  }
+  lines.push('');
+  if (v.siswa_bersih.length) lines.push('Sesuai silabus: ' + v.siswa_bersih.join(', ') + '.');
+  if (v.total_nonproduktif_istirahat > 0) {
+    lines.push('Catatan waktu: ' + fmtDur(v.total_nonproduktif_istirahat) +
+      ' aktivitas non-pembelajaran berada pada jendela istirahat (' + m.jendela_istirahat + ') dan TIDAK dihitung sebagai pelanggaran.');
+  }
+  if (d.pelanggaran.length) {
+    lines.push('Catatan: ' + d.pelanggaran.length + ' event BLOCKED/INSTALLER adalah PERCOBAAN yang diblokir sistem, bukan bukti program terpasang — perlu konfirmasi ke siswa.');
+  }
+  lines.push('');
+  lines.push('Rekomendasi: ' + (v.siswa_terindikasi.length ? 'pembinaan lisan oleh instruktur, tanpa surat peringatan.' : 'tidak perlu tindakan khusus.'));
+  lines.push('Dibuat oleh: ' + (userInfo ? userInfo.full_name : 'Instruktur Lab') + ' — status: DRAF, menunggu persetujuan.');
+  return lines.join('\n');
+}
+
+function toggleApprove() {
+  approved = document.getElementById('chkApprove').checked;
+  const st = document.getElementById('stamp');
+  if (approved) {
+    const now = new Date();
+    const jam = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+    st.textContent = 'DISETUJUI (draf lokal) oleh ' + (userInfo ? userInfo.full_name : 'Instruktur') + ' pukul ' + jam +
+      ' — belum ada tindakan yang dikirim ke pihak mana pun.';
+    st.classList.add('show');
+  } else {
+    st.classList.remove('show');
+  }
+}
+function salinDraf() {
+  const t = document.getElementById('drafText');
+  t.select();
+  navigator.clipboard.writeText(t.value).then(() => {
+    const btn = event.target.closest('button');
+    const old = btn.innerHTML;
+    btn.innerHTML = '&#10003; Tersalin';
+    setTimeout(() => { btn.innerHTML = old; }, 1600);
+  }).catch(() => document.execCommand('copy'));
+}
+function unduhJson() {
+  if (!lastData) return;
+  const blob = new Blob([JSON.stringify(lastData, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'analisa_aktivitas_' + (lastData.meta.tanggal || 'log') + '.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+document.getElementById('loginPass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+document.getElementById('loginUser').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+// Token bisa dibagikan lewat ?token=... (mis. dari tab dashboard)
+const urlToken = new URLSearchParams(location.search).get('token');
+if (urlToken) { token = urlToken; localStorage.setItem(TOKEN_KEY, token); }
+loadData();
+</script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+127.0.0.1:1916
+192.168.20.100:1916
+192.168.20.70:1916
+molay.sekolahkartini7.web.id
+
+# ========================================================
+# PENGATURAN ALAMAT SERVER MOLAY SEKAR7 (DUAL MODE + AUTO LAN)
+# ========================================================
+# - Baris 1: IP Localhost Server Komputer Ini (127.0.0.1:1916)
+# - Baris 2: IP Server Lab Guru (192.168.20.100:1916)
+# - Baris 3: IP Server Cadangan Lab Guru (192.168.20.70:1916)
+# - Baris 4: Domain Cloudflare Tunnel (molay.sekolahkartini7.web.id)
+# ========================================================

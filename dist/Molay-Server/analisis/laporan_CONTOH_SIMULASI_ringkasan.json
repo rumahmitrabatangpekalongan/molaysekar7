@@ -1,0 +1,173 @@
+{
+  "sumber": "activities_demo_SIMULASI.jsonl",
+  "label": "DATA SIMULASI - BUKAN DATA SISWA SUNGGUHAN",
+  "periode": {
+    "mulai": "27 October 2026 07:28",
+    "selesai": "27 October 2026 11:40"
+  },
+  "ringkasan": {
+    "events": 423,
+    "users": 6,
+    "pcs": 6,
+    "apps": 14,
+    "violations": 8
+  },
+  "total_durasi_menit": 1211.6,
+  "siswa": [
+    {
+      "user": "siswa04",
+      "durasi_menit": 251.9,
+      "sesi": 1,
+      "pc": [
+        "PC-LAB-04"
+      ]
+    },
+    {
+      "user": "siswa01",
+      "durasi_menit": 238.2,
+      "sesi": 1,
+      "pc": [
+        "PC-LAB-01"
+      ]
+    },
+    {
+      "user": "siswa03",
+      "durasi_menit": 219.7,
+      "sesi": 1,
+      "pc": [
+        "PC-LAB-03"
+      ]
+    },
+    {
+      "user": "siswa06",
+      "durasi_menit": 198.4,
+      "sesi": 1,
+      "pc": [
+        "PC-LAB-06"
+      ]
+    },
+    {
+      "user": "siswa02",
+      "durasi_menit": 152.8,
+      "sesi": 1,
+      "pc": [
+        "PC-LAB-02"
+      ]
+    },
+    {
+      "user": "siswa05",
+      "durasi_menit": 150.6,
+      "sesi": 1,
+      "pc": [
+        "PC-LAB-05"
+      ]
+    }
+  ],
+  "komposisi": {
+    "Belajar / Tugas": 309,
+    "Hiburan / Distraksi": 91,
+    "Netral / Tak Terklasifikasi": 14,
+    "Pelanggaran (BLOCKED/INSTALLER)": 8,
+    "Sistem / Kendala": 1
+  },
+  "aplikasi_teratas": [
+    {
+      "app": "chrome.exe",
+      "kategori": "Belajar / Tugas",
+      "frekuensi": 194,
+      "durasi_menit": 550.9
+    },
+    {
+      "app": "code.exe",
+      "kategori": "Belajar / Tugas",
+      "frekuensi": 125,
+      "durasi_menit": 361.4
+    },
+    {
+      "app": "geogebra.exe",
+      "kategori": "Belajar / Tugas",
+      "frekuensi": 33,
+      "durasi_menit": 86.3
+    },
+    {
+      "app": "excel.exe",
+      "kategori": "Belajar / Tugas",
+      "frekuensi": 19,
+      "durasi_menit": 59.1
+    },
+    {
+      "app": "winword.exe",
+      "kategori": "Belajar / Tugas",
+      "frekuensi": 13,
+      "durasi_menit": 35.0
+    },
+    {
+      "app": "notepad.exe",
+      "kategori": "Belajar / Tugas",
+      "frekuensi": 10,
+      "durasi_menit": 26.5
+    },
+    {
+      "app": "steam.exe",
+      "kategori": "Hiburan / Distraksi",
+      "frekuensi": 7,
+      "durasi_menit": 21.0
+    },
+    {
+      "app": "vlc.exe",
+      "kategori": "Hiburan / Distraksi",
+      "frekuensi": 7,
+      "durasi_menit": 19.3
+    },
+    {
+      "app": "discord.exe",
+      "kategori": "Hiburan / Distraksi",
+      "frekuensi": 7,
+      "durasi_menit": 16.5
+    },
+    {
+      "app": "explorer.exe",
+      "kategori": "Belajar / Tugas",
+      "frekuensi": 2,
+      "durasi_menit": 7.2
+    },
+    {
+      "app": "game.exe",
+      "kategori": "Pelanggaran (BLOCKED/INSTALLER)",
+      "frekuensi": 2,
+      "durasi_menit": 7.1
+    },
+    {
+      "app": "setup_ff.exe",
+      "kategori": "Pelanggaran (BLOCKED/INSTALLER)",
+      "frekuensi": 2,
+      "durasi_menit": 5.8
+    },
+    {
+      "app": "setup_game.exe",
+      "kategori": "Pelanggaran (BLOCKED/INSTALLER)",
+      "frekuensi": 1,
+      "durasi_menit": 2.3
+    },
+    {
+      "app": "PENGATURAN AKSES",
+      "kategori": "Sistem / Kendala",
+      "frekuensi": 1,
+      "durasi_menit": 1.4
+    }
+  ],
+  "pelanggaran": [
+    {
+      "user": "siswa02",
+      "blocked": 5,
+      "installer": 1,
+      "total": 6
+    },
+    {
+      "user": "siswa05",
+      "blocked": 0,
+      "installer": 2,
+      "total": 2
+    }
+  ]
+}

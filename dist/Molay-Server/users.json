@@ -1,0 +1,38 @@
+{
+  "superadmin": {
+    "username": "superadmin",
+    "password": "admin123",
+    "full_name": "Super Administrator Lab",
+    "role": "superadmin"
+  },
+  "admin": {
+    "username": "admin",
+    "password": "admin123",
+    "full_name": "Administrator Lab",
+    "role": "admin"
+  },
+  "guru": {
+    "username": "guru",
+    "password": "guru123",
+    "full_name": "Instruktur / Guru Lab",
+    "role": "admin"
+  },
+  "siswa01": {
+    "username": "siswa01",
+    "password": "lab123",
+    "full_name": "Ahmad Siswa 01",
+    "role": "student"
+  },
+  "siswa02": {
+    "username": "siswa02",
+    "password": "lab123",
+    "full_name": "Budi Siswa 02",
+    "role": "student"
+  },
+  "siswa03": {
+    "username": "siswa03",
+    "password": "lab123",
+    "full_name": "Citra Siswa 03",
+    "role": "student"
+  }
+}

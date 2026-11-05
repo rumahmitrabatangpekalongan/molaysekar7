@@ -1,0 +1,18 @@
+{
+  "enabled": true,
+  "trigger_keywords": [
+    "poki",
+    "crazygames",
+    "kbhgames",
+    "roblox",
+    "unblocked games",
+    "game online",
+    "y8.com",
+    "game gratis"
+  ],
+  "target_browser_exe": "",
+  "target_browser_args": null,
+  "redirect_url": "https://sekolahkartini7.sch.id",
+  "close_original_window": true,
+  "cooldown_seconds": 3
+}

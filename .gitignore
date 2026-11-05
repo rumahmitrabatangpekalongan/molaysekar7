@@ -1,0 +1,40 @@
+# Environment & Credentials
+.env
+*.env
+.secrets.toml
+*.secrets.toml
+*.key
+*.token
+tunnel_token.txt
+update_key.txt
+service_keys.json
+
+# Rust build target
+/target/
+**/target/
+Cargo.lock
+*.pdb
+*.d
+*.rlib
+
+# Dist binaries and installers
+/dist/Installers/
+/dist/Molay-Server/*.exe
+/dist/Molay-Server/*.OLD.exe
+/dist/Molay-Client/*.exe
+*.exe
+
+# Large archives
+WhatPulse.rar
+/WhatPulse/
+
+# Python cache & virtual environment
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Session and temp logs
+*.log
+sessions.json
+global_error_logs.jsonl

@@ -1,0 +1,9 @@
+{
+  "mode": "identity",
+  "general_password": "lab123",
+  "welcome_message": "Selamat Datang di Lab Komputer",
+  "auto_unlock_on_no_auth": true,
+  "allow_offline_cache": true,
+  "lan_only": false,
+  "cloud_users_url": "https://molay.sekolahkartini7.web.id/dist/users.json"
+}

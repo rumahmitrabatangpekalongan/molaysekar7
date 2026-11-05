@@ -1,0 +1,25 @@
+name: PR-Agent Zero Regression Review
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+  issue_comment:
+    types: [created]
+
+jobs:
+  pr_agent_job:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      issues: write
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: PR-Agent Review
+        uses: qodo-ai/pr-agent@main
+        env:
+          OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
+          OPENAI_API_BASE: "https://ai.sumopod.com/v1"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

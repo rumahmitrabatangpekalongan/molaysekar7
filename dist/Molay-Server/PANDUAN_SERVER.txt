@@ -1,0 +1,46 @@
+PANDUAN KOMPUTER SERVER / GURU - MOLAY SEKAR7
+==============================================
+
+1. Cara Menjalankan Server Molay & Cloudflare Tunnel (1-Klik):
+   - Cukup klik ganda "Jalankan-Molay-Server.bat".
+   - Skrip ini otomatis menjalankan Server Molay di port 1916 SEKALIGUS mengaktifkan
+     Cloudflare Tunnel ke domain publik (https://molay.sekolahkartini7.web.id) di background.
+   - Browser akan otomatis membuka Dashboard Guru di: http://localhost:1916
+   - Masukkan Login Guru/Admin:
+     * Username: admin (Password: admin123)
+     * atau Username: guru (Password: guru123)
+   - Seluruh akses publik atau lewat domain kini terlindungi login wajib!
+
+2. Opsi Tambahan Cloudflare:
+   - Jika ingin menjalankan Tunnel terpisah secara manual: klik ganda "Jalankan-Cloudflare-Tunnel.bat".
+   - Jika ingin Tunnel berjalan otomatis sebagai Service setiap Windows menyala:
+     klik kanan "Pasang-Cloudflare-Service.bat" dan pilih "Run as administrator".
+
+3. Catat Alamat untuk Komputer Siswa:
+   - Untuk Siswa di Lab (Jaringan Lokal): Berikan IP LAN Server (misal: 192.168.1.50:1916).
+   - Untuk Siswa di Rumah / Luar Lab: Berikan Domain Cloudflare Tunnel (misal: lab.sekolahkartini7.sch.id).
+   - Kedua alamat ini bisa dimasukkan sekaligus ke dalam "server_ip.txt" di komputer siswa agar otomatis saling melengkapi!
+
+4. Fitur di Dashboard Web:
+   - Tab "Monitoring Layar": Melihat seluruh layar siswa secara live (grid tile ala Veyon).
+   - Tombol "Kunci Semua PC" / "Buka Semua PC": Kontrol massal kelas.
+   - Tab "Log Aktivitas Siswa": Mengetahui program/aplikasi dan website yang dibuka tiap siswa.
+   - Tab "Akun Login Lab": Tambah akun siswa baru dengan username dan password yang diinginkan.
+   - Tab "Integrasi API (Workbuddy)": Manajemen kunci API mandiri (M2M) untuk sinkronisasi data ke workbuddy.sekolahkartini7.web.id.
+     * Kunci tersimpan di "service_keys.json" (tahan restart).
+     * Endpoint status sinkronisasi: https://molay.sekolahkartini7.web.id/api/sync/status
+     * Endpoint analisa aktivitas: https://molay.sekolahkartini7.web.id/api/analisa
+     * Menggunakan header: X-API-KEY: molay_sec_workbuddy_8f92a1e4c7b6d0e3
+   - Tab "Laporan Analisa Aktivitas": Laporan analisis pemakaian aplikasi per siswa
+     (produktif vs non-produktif, jam belajar vs istirahat, percobaan program terblokir).
+     Alamat langsung: http://localhost:1916/analisaaktivitas
+     Lewat domain: https://molay.sekolahkartini7.web.id/analisaaktivitas
+
+     Catatan halaman analisa:
+     * Wajib login Guru/Admin (data layar siswa dilindungi).
+     * Bisa dipilih tanggal, zona waktu (WIB/WITA/WIT), dan jam belajar/istirahat.
+     * Tombol "Cetak / PDF" menghasilkan laporan siap cetak (Ctrl+P).
+     * Halaman ini HANYA menampilkan draf laporan. Server tidak mengirim email,
+       tidak menjatuhkan sanksi, dan tidak memblokir akun secara otomatis.
+     * Aktivitas hiburan pada jam istirahat / Salat Jumat (11.30-13.00) tidak
+       dihitung sebagai pelanggaran jam belajar.

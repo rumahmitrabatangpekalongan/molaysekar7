@@ -1,0 +1,7 @@
+{
+  "latest_version": "1.0.4",
+  "release_notes": "Dukungan IP Server Baru Otomatis (Port 1916 default), Tampilan Dashboard LAN Dinamis, dan Hot-Reload Alamat Server.",
+  "api_key": "cfut_EFE4TDO6DKe6tGvVKfgGgjW1Hldzn6ss43VLVg2J7b17463a",
+  "mandatory": false,
+  "client_binary_path": "dist/Molay-Client/MolayClient-Sekar7.exe"
+}

@@ -1,0 +1,42 @@
+{
+  "block_installers": true,
+  "alert_on_installer": true,
+  "blocked_apps": [
+    "steam.exe",
+    "steamwebhelper.exe",
+    "epicgameslauncher.exe",
+    "robloxplayerbeta.exe",
+    "discord.exe",
+    "telegram.exe",
+    "utorrent.exe",
+    "bittorrent.exe",
+    "cheatengine.exe",
+    "genshinimpact.exe",
+    "valorant.exe",
+    "riotclientservices.exe"
+  ],
+  "blocked_keywords": [
+    "Cheat Engine",
+    "Roblox",
+    "Torrent",
+    "Steam"
+  ],
+  "browser_redirect": {
+    "enabled": true,
+    "trigger_keywords": [
+      "poki",
+      "crazygames",
+      "kbhgames",
+      "roblox",
+      "unblocked games",
+      "game online",
+      "y8.com",
+      "game gratis"
+    ],
+    "target_browser_exe": "",
+    "target_browser_args": null,
+    "redirect_url": "https://sekolahkartini7.sch.id",
+    "close_original_window": true,
+    "cooldown_seconds": 3
+  }
+}
