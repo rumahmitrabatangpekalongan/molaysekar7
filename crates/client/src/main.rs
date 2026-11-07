@@ -1,6 +1,6 @@
 mod connection;
 mod guard;
-mod remote_input;
+pub mod remote_input;
 mod screen;
 mod tracker;
 mod ui;
@@ -450,10 +450,9 @@ async fn main() {
             }
         }
 
-        // Coba auto-discovery LAN jika:
-        // 1. Belum pernah dicoba (saat startup)
-        // 2. Berada di indeks awal (current_idx == 0) dan sudah lewat minimal 30 detik
-        // Ini mencegah scan memotong rotasi endpoint cadangan (Cloudflare Tunnel) di tengah jalan
+        // Coba auto-discovery LAN jika belum pernah dicoba atau sudah lewat minimal 5 detik sejak scan terakhir.
+        // Dengan interval cepat (5 detik), klien akan langsung mendeteksi server baru di jaringan lokal
+        // tanpa harus menunggu rotasi timeout yang lama.
         let should_scan = match last_scan_attempt {
             None => true,
             Some(t) => current_idx == 0 && t.elapsed() > std::time::Duration::from_secs(30),
@@ -464,12 +463,12 @@ async fn main() {
             let _ = ui_cmd_tx.send(UiCommand::SetStatus(
                 "🔍 Memindai Server Guru di jaringan LAN...".to_string(),
             ));
-            if let Some(discovered_lan) = connection::discover_lan_server_ip(4000).await {
+            if let Some(discovered_lan) = connection::discover_lan_server_ip(2500).await {
                 if let Some(ep_discovered) = connection::ServerEndpoint::from_raw(&discovered_lan) {
                     error_logger::register_fallback_endpoint(ep_discovered.http_base_url());
                     // Posisikan server yang aktif di urutan pertama tanpa menghapus endpoint cadangan lainnya
                     endpoints.retain(|e| e.ws_url != ep_discovered.ws_url);
-                    println!("[DISCOVERY] ✅ Server Guru ditemukan: {}! Konek sekarang.", discovered_lan);
+                    println!("[LAN] ✅ Jaringan lokal terdeteksi! Server Guru aktif di: {}! Konek sekarang.", discovered_lan);
                     endpoints.insert(0, ep_discovered);
                     current_idx = 0;
                 }
@@ -488,10 +487,10 @@ async fn main() {
         println!("[CLIENT] Mencoba terhubung ke [{}] {}...", ep_label, ep.ws_url);
         let _ = ui_cmd_tx.send(UiCommand::SetStatus(format!("Menghubungkan ke {} ({})...", ep_label, ep.raw)));
 
-        // Batas waktu koneksi agar tidak hang 21 detik jika firewall server memblokir
+        // Batas waktu koneksi agar tidak hang jika endpoint mati
         let connect_timeout = match ep.mode {
-            connection::ConnectionMode::Lan => Duration::from_millis(3500), // 3.5s untuk LAN
-            connection::ConnectionMode::Tunnel => Duration::from_millis(8000), // 8s untuk Cloudflare Tunnel
+            connection::ConnectionMode::Lan => Duration::from_millis(2000), // 2.0s untuk LAN
+            connection::ConnectionMode::Tunnel => Duration::from_millis(6000), // 6s untuk Cloudflare Tunnel
         };
 
         match tokio::time::timeout(connect_timeout, connect_async(&ep.ws_url)).await {
@@ -955,6 +954,6 @@ async fn main() {
             }
         }
 
-        sleep(Duration::from_millis(1500)).await;
+        sleep(Duration::from_millis(800)).await;
     }
 }

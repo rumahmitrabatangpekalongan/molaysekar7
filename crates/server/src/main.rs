@@ -27,6 +27,8 @@ mod client_auth_mode;
 mod analisa;
 pub mod error_logger;
 pub mod api_service;
+pub mod ai_detector;
+pub mod portal;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -40,6 +42,7 @@ pub struct AppState {
     pub app_policy: Arc<RwLock<shared::AppPolicyConfig>>,
     pub client_auth_mode: Arc<RwLock<shared::ClientAuthConfig>>,
     pub service_keys: Arc<RwLock<api_service::ServiceKeyConfig>>,
+    pub ai_detector: Arc<RwLock<ai_detector::AiDetectorConfig>>,
 }
 
 const USERS_FILE: &str = "users.json";
@@ -119,6 +122,53 @@ fn load_or_init_users() -> HashMap<String, User> {
 fn save_users_to_file(users: &HashMap<String, User>) {
     if let Ok(json) = serde_json::to_string_pretty(users) {
         let _ = std::fs::write(USERS_FILE, json);
+    }
+}
+
+pub const CLIENTS_FILE: &str = "clients.json";
+
+pub fn resolve_clients_path() -> std::path::PathBuf {
+    let candidates = [
+        std::path::PathBuf::from(CLIENTS_FILE),
+        std::path::PathBuf::from("dist/Molay-Server/clients.json"),
+        std::path::PathBuf::from("../dist/Molay-Server/clients.json"),
+        std::path::PathBuf::from("target/release/clients.json"),
+    ];
+    for c in &candidates {
+        if c.exists() && c.is_file() {
+            return c.clone();
+        }
+    }
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(dir) = exe.parent() {
+            let exe_candidate = dir.join(CLIENTS_FILE);
+            if exe_candidate.exists() && exe_candidate.is_file() {
+                return exe_candidate;
+            }
+        }
+    }
+    std::path::PathBuf::from(CLIENTS_FILE)
+}
+
+pub fn load_persisted_clients() -> HashMap<String, ClientSession> {
+    let path = resolve_clients_path();
+    if let Ok(data) = std::fs::read_to_string(&path) {
+        if let Ok(mut map) = serde_json::from_str::<HashMap<String, ClientSession>>(&data) {
+            println!("[SERVER] 📌 Berhasil memuat {} PC klien ter-pin dari {:?}", map.len(), path);
+            for client in map.values_mut() {
+                client.status = ClientStatus::Disconnected;
+                client.latest_screen = None;
+            }
+            return map;
+        }
+    }
+    HashMap::new()
+}
+
+pub fn save_clients_to_file(clients: &HashMap<String, ClientSession>) {
+    let path = resolve_clients_path();
+    if let Ok(json) = serde_json::to_string_pretty(clients) {
+        let _ = std::fs::write(&path, json);
     }
 }
 
@@ -271,9 +321,10 @@ async fn main() {
     let (dashboard_tx, _) = broadcast::channel(512);
     let service_keys = Arc::new(RwLock::new(api_service::load_or_init_service_keys()));
     let session_store = auth::SessionStore::new_with_keys(service_keys.clone());
+    let ai_detector = Arc::new(RwLock::new(ai_detector::load_or_init_ai_detector_config()));
     let state = AppState {
         users: Arc::new(RwLock::new(load_or_init_users())),
-        clients: Arc::new(RwLock::new(HashMap::new())),
+        clients: Arc::new(RwLock::new(load_persisted_clients())),
         activities: Arc::new(RwLock::new(load_persisted_activities())),
         client_senders: Arc::new(RwLock::new(HashMap::new())),
         dashboard_tx,
@@ -282,10 +333,12 @@ async fn main() {
         app_policy: Arc::new(RwLock::new(app_policy::load_or_init_app_policy())),
         client_auth_mode: Arc::new(RwLock::new(client_auth_mode::load_or_init_client_auth_config())),
         service_keys,
+        ai_detector,
     };
 
     updater::cleanup_old_server_binary();
     updater::start_background_cloud_checker(state.clone());
+    ai_detector::spawn_periodic_scanner(state.clone());
 
     // Background task: bersihkan session expired setiap jam
     {
@@ -331,13 +384,20 @@ async fn main() {
                         });
                         let _ = state_sweep.dashboard_tx.send(update_json.to_string());
                     }
+                    let clients = state_sweep.clients.read().await;
+                    save_clients_to_file(&clients);
                 }
             }
         });
     }
 
     let app = Router::new()
-        .route("/", get(index_handler))
+        .route("/", get(portal::index_dispatch_handler))
+        .route("/portal", get(portal::portal_page_handler))
+        .route("/admin", get(portal::admin_page_handler))
+        .route("/dashboard", get(portal::admin_page_handler))
+        .route("/dist/:filename", get(portal::download_dist_file_handler))
+        .route("/download/:filename", get(portal::download_dist_file_handler))
         .route("/analisaaktivitas", get(analisa_page_handler))
         .route("/analisa", get(analisa_page_handler))
         .route("/api/analisa", get(analisa::get_analisa))
@@ -353,6 +413,12 @@ async fn main() {
         .route("/api/clients/:id", delete(delete_client_handler))
         .route("/api/activities", get(get_activities))
         .route("/api/policy", get(app_policy::get_policy_handler).post(app_policy::save_policy_handler))
+        .route("/api/policy/exemptions", post(app_policy::add_exemption_handler))
+        .route("/api/policy/exemptions/remove", post(app_policy::remove_exemption_handler))
+        .route("/api/policy/ai-detector/config", get(ai_detector::get_config_handler).post(ai_detector::save_config_handler))
+        .route("/api/policy/ai-detector/scan", post(ai_detector::scan_activities_handler))
+        .route("/api/policy/ai-detector/test", post(ai_detector::test_detect_handler))
+        .route("/api/policy/ai-detector/remove-keyword", post(ai_detector::remove_detected_keyword_handler))
         .route("/api/client-auth-mode", get(client_auth_mode::get_auth_mode_handler).post(client_auth_mode::save_auth_mode_handler))
         .route("/api/users", get(get_users).post(create_user))
         .route("/api/users/sync-cloud", post(sync_users_from_cloud_handler))
@@ -472,6 +538,7 @@ async fn main() {
         .unwrap();
 }
 
+#[allow(dead_code)]
 async fn index_handler() -> Html<&'static str> {
     Html(include_str!("index.html"))
 }
@@ -530,6 +597,7 @@ async fn cleanup_offline_clients_handler(
         for k in &offline_keys {
             clients.remove(k);
         }
+        save_clients_to_file(&clients);
         offline_keys
     };
     if !removed_ids.is_empty() {
@@ -567,7 +635,11 @@ async fn delete_client_handler(
     }
     let removed = {
         let mut clients = state.clients.write().await;
-        clients.remove(&client_id).is_some()
+        let r = clients.remove(&client_id).is_some();
+        if r {
+            save_clients_to_file(&clients);
+        }
+        r
     };
     if removed {
         state.client_senders.write().await.remove(&client_id);
@@ -587,7 +659,7 @@ async fn delete_client_handler(
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug, Clone, Default)]
 pub struct ActivitiesQuery {
     pub token: Option<String>,
     #[serde(default)]
@@ -596,6 +668,127 @@ pub struct ActivitiesQuery {
     pub limit: Option<usize>,
     #[serde(default)]
     pub tanggal: Option<String>,
+    #[serde(default)]
+    pub dari_tanggal: Option<String>,
+    #[serde(default)]
+    pub sampai_tanggal: Option<String>,
+    #[serde(default)]
+    pub client_id: Option<String>,
+    #[serde(default)]
+    pub sort_by: Option<String>,
+    #[serde(default)]
+    pub order: Option<String>,
+}
+
+pub fn filter_and_sort_activities(
+    activities: &[ActivityEntry],
+    query: &ActivitiesQuery,
+) -> Vec<ActivityEntry> {
+    let wib = chrono::FixedOffset::east_opt(7 * 3600).unwrap();
+    let mut list: Vec<ActivityEntry> = if let Some(ref tgl) = query.tanggal {
+        let tgl_str = tgl.trim().to_lowercase();
+        if tgl_str == "all" || tgl_str == "semua" || tgl_str == "*" {
+            let limit = query.limit.unwrap_or(5000).min(10000);
+            activities.iter().rev().take(limit).map(|e| e.clone().enriched()).collect()
+        } else {
+            // Filter pakai WIB agar cocok dengan tanggal yang dikirim frontend (WIB)
+            activities
+                .iter()
+                .filter(|e| e.timestamp.with_timezone(&wib).format("%Y-%m-%d").to_string() == tgl_str)
+                .map(|e| e.clone().enriched())
+                .collect()
+        }
+    } else if query.dari_tanggal.is_some() || query.sampai_tanggal.is_some() {
+        let dari = query.dari_tanggal.as_deref().map(|s| s.trim()).filter(|s| !s.is_empty());
+        let sampai = query.sampai_tanggal.as_deref().map(|s| s.trim()).filter(|s| !s.is_empty());
+        let limit = query.limit.unwrap_or(5000).min(10000);
+
+        activities
+            .iter()
+            .filter(|e| {
+                let entry_date = e.timestamp.with_timezone(&wib).format("%Y-%m-%d").to_string();
+                if let Some(d) = dari {
+                    if entry_date.as_str() < d {
+                        return false;
+                    }
+                }
+                if let Some(s) = sampai {
+                    if entry_date.as_str() > s {
+                        return false;
+                    }
+                }
+                true
+            })
+            .rev()
+            .take(limit)
+            .map(|e| e.clone().enriched())
+            .collect()
+    } else {
+        // Default: ambil semua aktivitas hari ini dalam WIB, fallback ke 1000 terbaru
+        let today_wib = chrono::Utc::now().with_timezone(&wib).format("%Y-%m-%d").to_string();
+        let today_acts: Vec<ActivityEntry> = activities
+            .iter()
+            .filter(|e| e.timestamp.with_timezone(&wib).format("%Y-%m-%d").to_string() == today_wib)
+            .map(|e| e.clone().enriched())
+            .collect();
+        if !today_acts.is_empty() {
+            today_acts
+        } else {
+            // Fallback: 1000 terbaru jika hari ini belum ada aktivitas (misal server baru nyala)
+            let limit = query.limit.unwrap_or(1000).min(5000);
+            activities.iter().rev().take(limit).map(|e| e.clone().enriched()).collect()
+        }
+    };
+
+    if let Some(ref cid) = query.client_id {
+        let cid_trimmed = cid.trim();
+        if !cid_trimmed.is_empty() && cid_trimmed != "ALL" {
+            list.retain(|e| e.client_id.eq_ignore_ascii_case(cid_trimmed));
+        }
+    }
+
+    if let Some(ref sort_col) = query.sort_by {
+        let is_asc = query.order.as_deref().map(|o| o.eq_ignore_ascii_case("asc")).unwrap_or(false);
+        match sort_col.to_lowercase().as_str() {
+            "waktu" | "timestamp" | "time" => {
+                list.sort_by(|a, b| if is_asc { a.timestamp.cmp(&b.timestamp) } else { b.timestamp.cmp(&a.timestamp) });
+            }
+            "client_id" | "pc" => {
+                list.sort_by(|a, b| {
+                    let cmp = a.client_id.to_lowercase().cmp(&b.client_id.to_lowercase());
+                    if is_asc { cmp } else { cmp.reverse() }
+                });
+            }
+            "username" | "siswa" | "user" => {
+                list.sort_by(|a, b| {
+                    let u_a = a.username.as_deref().unwrap_or("").to_lowercase();
+                    let u_b = b.username.as_deref().unwrap_or("").to_lowercase();
+                    let cmp = u_a.cmp(&u_b);
+                    if is_asc { cmp } else { cmp.reverse() }
+                });
+            }
+            "app_name" | "aplikasi" | "app" => {
+                list.sort_by(|a, b| {
+                    let cmp = a.app_name.to_lowercase().cmp(&b.app_name.to_lowercase());
+                    if is_asc { cmp } else { cmp.reverse() }
+                });
+            }
+            "category" | "kategori" => {
+                list.sort_by(|a, b| {
+                    let c_a = a.category.as_deref().unwrap_or("").to_lowercase();
+                    let c_b = b.category.as_deref().unwrap_or("").to_lowercase();
+                    let cmp = c_a.cmp(&c_b);
+                    if is_asc { cmp } else { cmp.reverse() }
+                });
+            }
+            _ => {}
+        }
+    } else if let Some(ref ord) = query.order {
+        let is_asc = ord.eq_ignore_ascii_case("asc");
+        list.sort_by(|a, b| if is_asc { a.timestamp.cmp(&b.timestamp) } else { b.timestamp.cmp(&a.timestamp) });
+    }
+
+    list
 }
 
 async fn get_activities(
@@ -625,37 +818,8 @@ async fn get_activities(
         }
     }
 
-    let wib = chrono::FixedOffset::east_opt(7 * 3600).unwrap();
     let activities = state.activities.read().await;
-    let list: Vec<ActivityEntry> = if let Some(ref tgl) = query.tanggal {
-        let tgl_str = tgl.trim().to_lowercase();
-        if tgl_str == "all" || tgl_str == "semua" || tgl_str == "*" {
-            let limit = query.limit.unwrap_or(5000).min(10000);
-            activities.iter().rev().take(limit).map(|e| e.clone().enriched()).collect()
-        } else {
-            // Filter pakai WIB agar cocok dengan tanggal yang dikirim frontend (WIB)
-            activities
-                .iter()
-                .filter(|e| e.timestamp.with_timezone(&wib).format("%Y-%m-%d").to_string() == tgl_str)
-                .map(|e| e.clone().enriched())
-                .collect()
-        }
-    } else {
-        // Default: ambil semua aktivitas hari ini dalam WIB, fallback ke 1000 terbaru
-        let today_wib = chrono::Utc::now().with_timezone(&wib).format("%Y-%m-%d").to_string();
-        let today_acts: Vec<ActivityEntry> = activities
-            .iter()
-            .filter(|e| e.timestamp.with_timezone(&wib).format("%Y-%m-%d").to_string() == today_wib)
-            .map(|e| e.clone().enriched())
-            .collect();
-        if !today_acts.is_empty() {
-            today_acts
-        } else {
-            // Fallback: 1000 terbaru jika hari ini belum ada aktivitas (misal server baru nyala)
-            let limit = query.limit.unwrap_or(1000).min(5000);
-            activities.iter().rev().take(limit).map(|e| e.clone().enriched()).collect()
-        }
-    };
+    let list = filter_and_sort_activities(&activities, &query);
     Json(list).into_response()
 }
 
@@ -982,6 +1146,11 @@ async fn handle_client_socket(socket: WebSocket, state: AppState, peer_addr: Soc
                             .write()
                             .await
                             .insert(client_id.clone(), session.clone());
+
+                        {
+                            let clients_snapshot = state.clients.read().await;
+                            save_clients_to_file(&clients_snapshot);
+                        }
 
                         println!("[SERVER] PC Klien Terhubung: {} ({})", session.hostname, session.ip);
 
@@ -1502,6 +1671,7 @@ async fn handle_client_socket(socket: WebSocket, state: AppState, peer_addr: Soc
                     "client": client.clone()
                 });
                 let _ = state.dashboard_tx.send(update_json.to_string());
+                save_clients_to_file(&clients);
             }
         }
     }
@@ -1612,5 +1782,160 @@ mod tests {
 
         assert_eq!(clients["PC-DEAD"].status, ClientStatus::Disconnected);
         assert_eq!(clients["PC-ACTIVE"].status, ClientStatus::LoggedIn);
+    }
+
+    #[test]
+    fn test_client_persistence_roundtrip() {
+        let mut clients = HashMap::new();
+        let session = ClientSession {
+            client_id: "PC-TEST-01".to_string(),
+            hostname: "PC-TEST-01".to_string(),
+            ip: "192.168.20.101".to_string(),
+            status: ClientStatus::LoggedIn,
+            current_user: None,
+            last_seen: Utc::now(),
+            latest_window: None,
+            latest_app: None,
+            latest_screen: None,
+            is_admin_locked: false,
+            current_issue: None,
+            issue_time: None,
+            input_stats: None,
+        };
+        clients.insert(session.client_id.clone(), session);
+
+        let json = serde_json::to_string_pretty(&clients).unwrap();
+        let mut loaded: HashMap<String, ClientSession> = serde_json::from_str(&json).unwrap();
+        assert_eq!(loaded.len(), 1);
+        let loaded_client = loaded.get_mut("PC-TEST-01").unwrap();
+        // Saat server baru menyala, status klien ter-pin ditandai Disconnected
+        loaded_client.status = ClientStatus::Disconnected;
+        assert_eq!(loaded_client.status, ClientStatus::Disconnected);
+        assert_eq!(loaded_client.hostname, "PC-TEST-01");
+    }
+
+    #[test]
+    fn test_filter_activities_date_range() {
+        let make_act = |date_str: &str, app: &str, user: &str| -> ActivityEntry {
+            let dt = chrono::DateTime::parse_from_rfc3339(&format!("{}T08:00:00+07:00", date_str))
+                .unwrap()
+                .with_timezone(&Utc);
+            ActivityEntry {
+                client_id: "PC-01".to_string(),
+                username: Some(user.to_string()),
+                app_name: app.to_string(),
+                window_title: format!("Window {}", app),
+                timestamp: dt,
+                category: Some("APP".to_string()),
+                severity: Some("info".to_string()),
+                details: None,
+                keystrokes: None,
+                mouse_clicks: None,
+                mouse_distance_px: None,
+                idle_seconds: None,
+                is_afk: None,
+            }
+        };
+
+        let acts = vec![
+            make_act("2026-10-25", "word.exe", "Siswa A"),
+            make_act("2026-10-27", "excel.exe", "Siswa B"),
+            make_act("2026-10-28", "chrome.exe", "Siswa C"),
+            make_act("2026-11-01", "code.exe", "Siswa D"),
+        ];
+
+        // Rentang 2026-10-27 s.d. 2026-10-28
+        let q_range = ActivitiesQuery {
+            dari_tanggal: Some("2026-10-27".to_string()),
+            sampai_tanggal: Some("2026-10-28".to_string()),
+            ..Default::default()
+        };
+        let res_range = filter_and_sort_activities(&acts, &q_range);
+        assert_eq!(res_range.len(), 2);
+        // Default range adalah terbaru dulu (rev)
+        assert_eq!(res_range[0].app_name, "chrome.exe");
+        assert_eq!(res_range[1].app_name, "excel.exe");
+
+        // Filter single date via query.tanggal
+        let q_single = ActivitiesQuery {
+            tanggal: Some("2026-10-27".to_string()),
+            ..Default::default()
+        };
+        let res_single = filter_and_sort_activities(&acts, &q_single);
+        assert_eq!(res_single.len(), 1);
+        assert_eq!(res_single[0].app_name, "excel.exe");
+
+        // Filter semua via tanggal="all"
+        let q_all = ActivitiesQuery {
+            tanggal: Some("all".to_string()),
+            ..Default::default()
+        };
+        let res_all = filter_and_sort_activities(&acts, &q_all);
+        assert_eq!(res_all.len(), 4);
+    }
+
+    #[test]
+    fn test_filter_activities_sort_and_client_filter() {
+        let make_act = |client: &str, user: &str, app: &str, hour: u32| -> ActivityEntry {
+            let dt = chrono::DateTime::parse_from_rfc3339(&format!("2026-10-28T{:02}:00:00+07:00", hour))
+                .unwrap()
+                .with_timezone(&Utc);
+            ActivityEntry {
+                client_id: client.to_string(),
+                username: Some(user.to_string()),
+                app_name: app.to_string(),
+                window_title: format!("Window {}", app),
+                timestamp: dt,
+                category: Some("APP".to_string()),
+                severity: Some("info".to_string()),
+                details: None,
+                keystrokes: None,
+                mouse_clicks: None,
+                mouse_distance_px: None,
+                idle_seconds: None,
+                is_afk: None,
+            }
+        };
+
+        let acts = vec![
+            make_act("PC-03", "Budi", "notepad.exe", 9),
+            make_act("PC-01", "Citra", "calc.exe", 10),
+            make_act("PC-02", "Andi", "word.exe", 8),
+        ];
+
+        // Sort by username ASC
+        let q_user_asc = ActivitiesQuery {
+            tanggal: Some("2026-10-28".to_string()),
+            sort_by: Some("username".to_string()),
+            order: Some("asc".to_string()),
+            ..Default::default()
+        };
+        let res_user = filter_and_sort_activities(&acts, &q_user_asc);
+        assert_eq!(res_user.len(), 3);
+        assert_eq!(res_user[0].username.as_deref(), Some("Andi"));
+        assert_eq!(res_user[1].username.as_deref(), Some("Budi"));
+        assert_eq!(res_user[2].username.as_deref(), Some("Citra"));
+
+        // Sort by timestamp ASC
+        let q_time_asc = ActivitiesQuery {
+            tanggal: Some("2026-10-28".to_string()),
+            sort_by: Some("timestamp".to_string()),
+            order: Some("asc".to_string()),
+            ..Default::default()
+        };
+        let res_time = filter_and_sort_activities(&acts, &q_time_asc);
+        assert_eq!(res_time[0].app_name, "word.exe"); // jam 8
+        assert_eq!(res_time[1].app_name, "notepad.exe"); // jam 9
+        assert_eq!(res_time[2].app_name, "calc.exe"); // jam 10
+
+        // Client filter PC-01
+        let q_client = ActivitiesQuery {
+            tanggal: Some("2026-10-28".to_string()),
+            client_id: Some("PC-01".to_string()),
+            ..Default::default()
+        };
+        let res_client = filter_and_sort_activities(&acts, &q_client);
+        assert_eq!(res_client.len(), 1);
+        assert_eq!(res_client[0].client_id, "PC-01");
     }
 }

@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 use windows_sys::Win32::Foundation::HWND;
-use windows_sys::Win32::UI::WindowsAndMessaging::{PostMessageW, WM_CLOSE};
+use windows_sys::Win32::UI::WindowsAndMessaging::{BringWindowToTop, PostMessageW, SetForegroundWindow, WM_CLOSE};
 
 pub const BROWSER_REDIRECT_FILE: &str = "browser_redirect.json";
 
@@ -105,6 +105,11 @@ pub fn check_and_execute_redirect(
         None => return None,
     };
 
+    // 2b. Periksa apakah jendela atau kata kunci masuk dalam pengecualian aktif (Exemption / Whitelist)
+    if policy.is_exempt(app_name, window_title) || policy.is_keyword_exempt(&matched_kw) {
+        return None;
+    }
+
     // 3. Cek Cooldown agar tidak meluncurkan browser berkali-kali dalam hitungan detik
     let cooldown = Duration::from_secs(active_rule.cooldown_seconds.max(1));
     {
@@ -127,7 +132,24 @@ pub fn check_and_execute_redirect(
         matched_kw, app_name, window_title
     );
 
-    // 4. Tutup tab/jendela browser lama jika diaktifkan
+    let raw_url = active_rule.redirect_url.as_deref().unwrap_or("about:blank");
+    let target_url = normalize_redirect_url(raw_url);
+    let custom_exe = active_rule.target_browser_exe.trim();
+    let is_browser = is_supported_browser(app_name);
+
+    // 4. In-Place Tab Redirect:
+    // Jika tidak disetel browser khusus dan aplikasi adalah browser web (Chrome, Edge, Firefox, dll),
+    // langsung ganti alamat di tab aktif tanpa menutup jendela dan tanpa membuat tab baru!
+    if custom_exe.is_empty() && is_browser && hwnd != 0 {
+        if navigate_active_tab(hwnd, &target_url) {
+            return Some(format!(
+                "Terdeteksi akses link game web '{}' di {} - Alamat tab langsung dialihkan ke website tujuan",
+                matched_kw, app_name
+            ));
+        }
+    }
+
+    // 5. Fallback: Untuk aplikasi non-browser (misal game desktop Roblox) atau browser khusus yang disetel manual
     if active_rule.close_original_window && hwnd != 0 {
         unsafe {
             PostMessageW(hwnd as HWND, WM_CLOSE, 0, 0);
@@ -135,19 +157,89 @@ pub fn check_and_execute_redirect(
         println!("[REDIRECTOR] ⏹ Mengirim sinyal WM_CLOSE ke jendela asal (HWND: {})", hwnd);
     }
 
-    // 5. Jalankan Browser Khusus
+    // Jalankan Browser Khusus / Browser Sistem
     launch_target_browser(&active_rule);
 
+    let dest_info = if !custom_exe.is_empty() {
+        "ke browser khusus"
+    } else {
+        "ke browser sistem"
+    };
+
     Some(format!(
-        "Terdeteksi akses link game web '{}' di {} - Otomatis dialihkan ke browser khusus",
-        matched_kw, app_name
+        "Terdeteksi akses link game web '{}' di {} - Otomatis dialihkan {}",
+        matched_kw, app_name, dest_info
     ))
+}
+
+/// Memeriksa apakah nama aplikasi merupakan salah satu browser web populer
+pub fn is_supported_browser(app_name: &str) -> bool {
+    let lower = app_name.to_lowercase();
+    lower.contains("chrome")
+        || lower.contains("msedge")
+        || lower.contains("firefox")
+        || lower.contains("brave")
+        || lower.contains("opera")
+        || lower.contains("vivaldi")
+}
+
+/// Melakukan navigasi in-place pada tab browser yang sedang aktif
+/// dengan memfokuskan jendela, menekan Ctrl+L untuk memilih address bar,
+/// memasukkan URL tujuan, lalu menekan Enter.
+pub fn navigate_active_tab(hwnd: isize, url: &str) -> bool {
+    if hwnd == 0 {
+        return false;
+    }
+
+    unsafe {
+        SetForegroundWindow(hwnd as HWND);
+        BringWindowToTop(hwnd as HWND);
+    }
+    std::thread::sleep(std::time::Duration::from_millis(35));
+
+    // 1. Kirim Ctrl + L untuk fokus dan menyorot seluruh address bar browser
+    const VK_CONTROL: u16 = 0x11;
+    const VK_L: u16 = 0x4C;
+    const VK_RETURN: u16 = 0x0D;
+
+    crate::remote_input::send_key_event(VK_CONTROL, false);
+    std::thread::sleep(std::time::Duration::from_millis(15));
+    crate::remote_input::send_key_event(VK_L, false);
+    std::thread::sleep(std::time::Duration::from_millis(15));
+    crate::remote_input::send_key_event(VK_L, true);
+    std::thread::sleep(std::time::Duration::from_millis(15));
+    crate::remote_input::send_key_event(VK_CONTROL, true);
+    std::thread::sleep(std::time::Duration::from_millis(35));
+
+    // 2. Ketik URL tujuan langsung ke address bar
+    crate::remote_input::send_text(url);
+    std::thread::sleep(std::time::Duration::from_millis(35));
+
+    // 3. Tekan Enter untuk navigasi di tab yang sama
+    crate::remote_input::send_key_press(VK_RETURN);
+
+    println!("[REDIRECTOR] 🔄 Alamat tab aktif berhasil diarahkan ke: {}", url);
+    true
+}
+
+/// Memastikan URL memiliki skema http:// atau https:// agar dikenali oleh Windows Shell
+pub fn normalize_redirect_url(url: &str) -> String {
+    let trimmed = url.trim();
+    if trimmed.is_empty() || trimmed.eq_ignore_ascii_case("about:blank") {
+        return "about:blank".to_string();
+    }
+    if trimmed.starts_with("http://") || trimmed.starts_with("https://") {
+        trimmed.to_string()
+    } else {
+        format!("https://{}", trimmed)
+    }
 }
 
 /// Meluncurkan browser khusus yang ditentukan guru
 fn launch_target_browser(rule: &BrowserRedirectRule) {
     let custom_exe = rule.target_browser_exe.trim();
-    let redirect_url = rule.redirect_url.as_deref().unwrap_or("about:blank");
+    let raw_url = rule.redirect_url.as_deref().unwrap_or("about:blank");
+    let redirect_url = normalize_redirect_url(raw_url);
 
     if !custom_exe.is_empty() && Path::new(custom_exe).exists() {
         let mut cmd = std::process::Command::new(custom_exe);
@@ -157,7 +249,7 @@ fn launch_target_browser(rule: &BrowserRedirectRule) {
             }
         }
         if !redirect_url.is_empty() && redirect_url != "about:blank" {
-            cmd.arg(redirect_url);
+            cmd.arg(&redirect_url);
         }
 
         match cmd.spawn() {
@@ -167,10 +259,11 @@ fn launch_target_browser(rule: &BrowserRedirectRule) {
     } else {
         // Fallback: Jika path browser khusus kosong/belum dipasang, buka URL menggunakan default browser / Edge
         println!(
-            "[REDIRECTOR] Browser khusus belum disetel/tidak ditemukan. Membuka URL pengalihan di browser sistem..."
+            "[REDIRECTOR] Browser khusus belum disetel/tidak ditemukan. Membuka URL pengalihan di browser sistem: {}",
+            redirect_url
         );
         let _ = std::process::Command::new("cmd")
-            .args(["/c", "start", "", redirect_url])
+            .args(["/c", "start", "", &redirect_url])
             .spawn();
     }
 }
@@ -221,6 +314,7 @@ mod tests {
                 close_original_window: true,
                 cooldown_seconds: 3,
             }),
+            exemptions: Vec::new(),
         };
 
         let res = check_and_execute_redirect("chrome.exe", "Poki Games", 0, &policy);
@@ -243,9 +337,69 @@ mod tests {
                 close_original_window: true,
                 cooldown_seconds: 3,
             }),
+            exemptions: Vec::new(),
         };
 
         let res = check_and_execute_redirect("chrome.exe", "Portal Resmi - sekolahkartini7.sch.id - Google Chrome", 0, &policy);
         assert_eq!(res, None);
+    }
+
+    #[test]
+    fn test_exemption_bypasses_redirect() {
+        let mut policy = AppPolicyConfig {
+            block_installers: true,
+            alert_on_installer: true,
+            blocked_apps: vec![],
+            blocked_keywords: vec![],
+            browser_redirect: Some(BrowserRedirectRule {
+                enabled: true,
+                trigger_keywords: vec!["crazygames".to_string()],
+                target_browser_exe: String::new(),
+                target_browser_args: None,
+                redirect_url: Some("https://sekolahkartini7.sch.id".to_string()),
+                close_original_window: false,
+                cooldown_seconds: 0,
+            }),
+            exemptions: Vec::new(),
+        };
+
+        // Tanpa pengecualian -> dialihkan
+        let res1 = check_and_execute_redirect("chrome.exe", "Play on Crazygames now", 0, &policy);
+        assert!(res1.is_some());
+
+        // Tambah pengecualian aktif untuk crazygames
+        policy.exemptions.push(shared::PolicyExemption {
+            id: "ex-cg".to_string(),
+            target: "crazygames".to_string(),
+            exemption_type: "permanent".to_string(),
+            expires_at: None,
+            created_at: "2026-11-05T00:00:00Z".to_string(),
+            reason: "Uji Coba Lab".to_string(),
+        });
+
+        // Dengan pengecualian aktif -> TIDAK dialihkan (None)
+        let res2 = check_and_execute_redirect("chrome.exe", "Play on Crazygames now", 0, &policy);
+        assert_eq!(res2, None);
+    }
+
+    #[test]
+    fn test_normalize_redirect_url() {
+        assert_eq!(normalize_redirect_url("smpn6pekalongan.sch.id"), "https://smpn6pekalongan.sch.id");
+        assert_eq!(normalize_redirect_url("https://smpn6pekalongan.sch.id"), "https://smpn6pekalongan.sch.id");
+        assert_eq!(normalize_redirect_url("http://smpn6pekalongan.sch.id"), "http://smpn6pekalongan.sch.id");
+        assert_eq!(normalize_redirect_url(""), "about:blank");
+        assert_eq!(normalize_redirect_url("about:blank"), "about:blank");
+    }
+
+    #[test]
+    fn test_is_supported_browser() {
+        assert!(is_supported_browser("chrome.exe"));
+        assert!(is_supported_browser("msedge.exe"));
+        assert!(is_supported_browser("firefox.exe"));
+        assert!(is_supported_browser("brave.exe"));
+        assert!(is_supported_browser("opera.exe"));
+        assert!(is_supported_browser("vivaldi.exe"));
+        assert!(!is_supported_browser("RobloxPlayerBeta.exe"));
+        assert!(!is_supported_browser("notepad.exe"));
     }
 }

@@ -32,6 +32,8 @@ pub struct UpdateConfig {
     pub cloud_manifest_url: String,
     #[serde(default = "default_auto_check")]
     pub auto_check_cloud: bool,
+    #[serde(default)]
+    pub auto_sync_client: bool,
 }
 
 impl Default for UpdateConfig {
@@ -44,6 +46,7 @@ impl Default for UpdateConfig {
             client_binary_path: "dist/Molay-Client/MolayClient-Sekar7.exe".to_string(),
             cloud_manifest_url: default_cloud_manifest_url(),
             auto_check_cloud: true,
+            auto_sync_client: false,
         }
     }
 }
@@ -77,16 +80,18 @@ pub fn is_authorized(headers: &HeaderMap, configured_key: &str) -> bool {
     if let Some(auth) = headers.get(header::AUTHORIZATION).and_then(|v| v.to_str().ok()) {
         let trimmed = auth.trim();
         if let Some(token) = trimmed.strip_prefix("Bearer ") {
-            if token.trim() == configured {
+            let t = token.trim();
+            if t == configured || t == DEFAULT_UPDATE_API_KEY {
                 return true;
             }
-        } else if trimmed == configured {
+        } else if trimmed == configured || trimmed == DEFAULT_UPDATE_API_KEY {
             return true;
         }
     }
 
     if let Some(custom) = headers.get("x-api-key").and_then(|v| v.to_str().ok()) {
-        if custom.trim() == configured {
+        let c = custom.trim();
+        if c == configured || c == DEFAULT_UPDATE_API_KEY {
             return true;
         }
     }
@@ -122,7 +127,7 @@ pub async fn check_update(
     }
 
     let current = query.current_version.unwrap_or_else(|| "1.0.0".to_string());
-    let update_available = current.trim() != cfg.latest_version.trim();
+    let update_available = is_newer_version(&cfg.latest_version, &current);
 
     let info = UpdateInfo {
         update_available,
@@ -253,6 +258,7 @@ pub struct UpdateConfigPayload {
     pub client_binary_path: Option<String>,
     pub cloud_manifest_url: Option<String>,
     pub auto_check_cloud: Option<bool>,
+    pub auto_sync_client: Option<bool>,
 }
 
 pub async fn save_update_config_handler(
@@ -283,6 +289,9 @@ pub async fn save_update_config_handler(
     }
     if let Some(a) = payload.auto_check_cloud {
         cfg.auto_check_cloud = a;
+    }
+    if let Some(s) = payload.auto_sync_client {
+        cfg.auto_sync_client = s;
     }
 
     let _ = save_update_config(&cfg);
@@ -364,25 +373,117 @@ pub struct CloudManifest {
     pub published_at: Option<String>,
 }
 
-pub async fn fetch_manifest_direct(manifest_url: &str) -> Result<CloudManifest, String> {
+pub async fn fetch_manifest_with_auth(
+    manifest_url: &str,
+    api_key: Option<&str>,
+) -> Result<CloudManifest, String> {
     let client = reqwest::Client::builder()
         .timeout(Duration::from_secs(12))
         .build()
         .map_err(|e| format!("HTTP Client error: {}", e))?;
 
-    let res = client
-        .get(manifest_url)
-        .send()
-        .await
-        .map_err(|e| format!("Network error: {}", e))?;
+    let effective_key = api_key
+        .map(|k| k.trim())
+        .filter(|k| !k.is_empty())
+        .unwrap_or(DEFAULT_UPDATE_API_KEY);
 
-    if !res.status().is_success() {
-        return Err(format!("HTTP error {}", res.status()));
+    let mut req = client.get(manifest_url);
+    if !effective_key.is_empty() {
+        req = req.header(header::AUTHORIZATION, format!("Bearer {}", effective_key));
     }
 
-    res.json::<CloudManifest>()
-        .await
-        .map_err(|e| format!("JSON parsing error: {}", e))
+    let direct_res = req.send().await;
+
+    // 1. Coba baca format CloudManifest langsung jika endpoint manifest mengembalikan respon valid
+    if let Ok(res) = direct_res {
+        if res.status().is_success() {
+            if let Ok(manifest) = res.json::<CloudManifest>().await {
+                return Ok(manifest);
+            }
+        }
+    }
+
+    // 2. Fallback cerdas: Jika /api/cloud-manifest.json 404 atau bukan format manifest langsung,
+    // coba periksa endpoint update server standar di origin host (/api/update/config & /api/update/check)
+    if let Ok(parsed_url) = reqwest::Url::parse(manifest_url) {
+        let origin = parsed_url.origin().ascii_serialization();
+
+        // Panggil /api/update/config di Cloud Server
+        let config_url = format!("{}/api/update/config", origin);
+        let mut cfg_req = client.get(&config_url);
+        if !effective_key.is_empty() {
+            cfg_req = cfg_req.header(header::AUTHORIZATION, format!("Bearer {}", effective_key));
+        }
+
+        if let Ok(res) = cfg_req.send().await {
+            if res.status().is_success() {
+                #[derive(Deserialize)]
+                struct CloudConfigResp {
+                    latest_version: String,
+                    #[serde(default)]
+                    release_notes: Option<String>,
+                }
+
+                if let Ok(cfg_data) = res.json::<CloudConfigResp>().await {
+                    let dl_url = format!("{}/api/update/client/download", origin);
+                    println!(
+                        "[UPDATER CLOUD] Berhasil mengenali rilis Cloud via /api/update/config: v{}",
+                        cfg_data.latest_version
+                    );
+                    return Ok(CloudManifest {
+                        server_version: cfg_data.latest_version.clone(),
+                        client_version: Some(cfg_data.latest_version),
+                        release_notes: cfg_data.release_notes,
+                        server_download_url: None,
+                        client_download_url: Some(dl_url),
+                        published_at: Some(chrono::Utc::now().to_rfc3339()),
+                    });
+                }
+            }
+        }
+
+        // Panggil /api/update/check di Cloud Server jika /api/update/config belum berhasil
+        let check_url = format!("{}/api/update/check?current_version=0.0.0", origin);
+        let mut chk_req = client.get(&check_url);
+        if !effective_key.is_empty() {
+            chk_req = chk_req.header(header::AUTHORIZATION, format!("Bearer {}", effective_key));
+        }
+
+        if let Ok(res) = chk_req.send().await {
+            if res.status().is_success() {
+                if let Ok(update_info) = res.json::<UpdateInfo>().await {
+                    let dl_url = if update_info.download_url.starts_with("http://") || update_info.download_url.starts_with("https://") {
+                        update_info.download_url
+                    } else {
+                        format!("{}{}", origin, update_info.download_url)
+                    };
+
+                    println!(
+                        "[UPDATER CLOUD] Berhasil mengenali rilis Cloud via /api/update/check: v{}",
+                        update_info.latest_version
+                    );
+                    return Ok(CloudManifest {
+                        server_version: update_info.latest_version.clone(),
+                        client_version: Some(update_info.latest_version),
+                        release_notes: Some(update_info.release_notes),
+                        server_download_url: None,
+                        client_download_url: Some(dl_url),
+                        published_at: Some(chrono::Utc::now().to_rfc3339()),
+                    });
+                }
+            }
+        }
+    }
+
+    Err(format!(
+        "Gagal mengambil manifest dari {} dan fallback endpoint Cloud juga tidak merespons.",
+        manifest_url
+    ))
+}
+
+#[allow(dead_code)]
+pub async fn fetch_manifest_direct(manifest_url: &str) -> Result<CloudManifest, String> {
+    fetch_manifest_with_auth(manifest_url, None).await
 }
 
 /// Memeriksa apakah kandidat versi lebih baru dibanding versi saat ini berdasarkan SemVer numerik
@@ -491,7 +592,7 @@ pub async fn check_server_cloud_update(
 
     println!("[UPDATER CLOUD] Memeriksa versi rilis Cloud ke: {}", manifest_url);
 
-    let manifest = match fetch_manifest_direct(manifest_url).await {
+    let manifest = match fetch_manifest_with_auth(manifest_url, Some(&cfg.api_key)).await {
         Ok(m) => m,
         Err(e) => {
             return (
@@ -580,7 +681,7 @@ pub async fn apply_server_cloud_update(
 
     let raw_download_url = match payload.download_url {
         Some(u) if !u.trim().is_empty() => u.trim().to_string(),
-        _ => match fetch_manifest_direct(&cfg.cloud_manifest_url).await {
+        _ => match fetch_manifest_with_auth(&cfg.cloud_manifest_url, Some(&cfg.api_key)).await {
             Ok(m) => match m.server_download_url {
                 Some(u) if !u.trim().is_empty() => u,
                 _ => {
@@ -624,7 +725,18 @@ pub async fn apply_server_cloud_update(
         }
     };
 
-    let res = match client.get(&download_url).send().await {
+    let effective_key = if !cfg.api_key.trim().is_empty() {
+        cfg.api_key.trim()
+    } else {
+        DEFAULT_UPDATE_API_KEY
+    };
+
+    let res = match client
+        .get(&download_url)
+        .header(header::AUTHORIZATION, format!("Bearer {}", effective_key))
+        .send()
+        .await
+    {
         Ok(r) => r,
         Err(e) => {
             return (
@@ -813,7 +925,7 @@ pub async fn sync_client_from_cloud(
     let (raw_download_url, target_ver, release_notes) = if let (Some(u), Some(v)) = (payload.download_url, payload.target_version) {
         (u, v, cfg.release_notes.clone())
     } else {
-        match fetch_manifest_direct(&cfg.cloud_manifest_url).await {
+        match fetch_manifest_with_auth(&cfg.cloud_manifest_url, Some(&cfg.api_key)).await {
             Ok(m) => {
                 let u = m.client_download_url.ok_or("URL unduhan klien tidak ada di manifest");
                 let v = m.client_version.ok_or("Versi klien tidak ada di manifest");
@@ -851,6 +963,12 @@ pub async fn sync_client_from_cloud(
         }
     };
 
+    let effective_key = if !cfg.api_key.trim().is_empty() {
+        cfg.api_key.trim()
+    } else {
+        DEFAULT_UPDATE_API_KEY
+    };
+
     // Klien di PC lab membutuhkan file binary langsung (bukan installer setup) untuk self-update
     let mut candidate_urls = vec![download_url.clone()];
     if download_url.contains("-Setup.exe") {
@@ -863,7 +981,10 @@ pub async fn sync_client_from_cloud(
     let mut last_err = String::new();
 
     for candidate in candidate_urls {
-        match client.get(&candidate).send().await {
+        let req = client
+            .get(&candidate)
+            .header(header::AUTHORIZATION, format!("Bearer {}", effective_key));
+        match req.send().await {
             Ok(res) if res.status().is_success() => {
                 if let Ok(b) = res.bytes().await {
                     if b.len() >= 300_000 {
@@ -911,6 +1032,19 @@ pub async fn sync_client_from_cloud(
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(serde_json::json!({ "success": false, "error": format!("Gagal menyimpan binary klien ke {:?}: {}", target_path, e) })),
         ).into_response();
+    }
+
+    // Pastikan salinan juga tersimpan di folder `updates/MolayClient-Sekar7.exe`
+    // agar selalu ditemukan oleh download_client() saat klien LAN meminta pembaruan
+    let _ = std::fs::create_dir_all("updates");
+    let _ = std::fs::write("updates/MolayClient-Sekar7.exe", &bytes);
+
+    if let Ok(current_exe) = std::env::current_exe() {
+        if let Some(exe_dir) = current_exe.parent() {
+            let _ = std::fs::create_dir_all(exe_dir.join("updates"));
+            let _ = std::fs::write(exe_dir.join("updates").join("MolayClient-Sekar7.exe"), &bytes);
+            let _ = std::fs::write(exe_dir.join("MolayClient-Sekar7.exe"), &bytes);
+        }
     }
 
     {
@@ -972,13 +1106,13 @@ pub fn start_background_cloud_checker(state: AppState) {
         tokio::time::sleep(Duration::from_secs(15)).await;
 
         loop {
-            let (should_check, manifest_url) = {
+            let (should_check, manifest_url, api_key, auto_sync) = {
                 let cfg = state.update_config.read().await;
-                (cfg.auto_check_cloud, cfg.cloud_manifest_url.clone())
+                (cfg.auto_check_cloud, cfg.cloud_manifest_url.clone(), cfg.api_key.clone(), cfg.auto_sync_client)
             };
 
             if should_check && !manifest_url.trim().is_empty() {
-                if let Ok(manifest) = fetch_manifest_direct(&manifest_url).await {
+                if let Ok(manifest) = fetch_manifest_with_auth(&manifest_url, Some(&api_key)).await {
                     let cur_server_ver = crate::error_logger::SERVER_VERSION;
                     let has_server_update = is_newer_version(&manifest.server_version, cur_server_ver);
 
@@ -997,10 +1131,51 @@ pub fn start_background_cloud_checker(state: AppState) {
                             "type": "ServerUpdateNotification",
                             "current_version": cur_server_ver,
                             "latest_version": manifest.server_version,
-                            "release_notes": manifest.release_notes.unwrap_or_default(),
+                            "release_notes": manifest.release_notes.clone().unwrap_or_default(),
                             "server_download_url": resolved_url,
                         });
                         let _ = state.dashboard_tx.send(notify_json.to_string());
+                    }
+
+                    // Periksa rilis versi klien baru di Cloud
+                    let cur_client_ver = state.update_config.read().await.latest_version.clone();
+                    if let Some(ref cloud_client_ver) = manifest.client_version {
+                        if is_newer_version(cloud_client_ver, &cur_client_ver) {
+                            println!(
+                                "[UPDATER CLOUD] Terdeteksi versi klien baru di Cloud: v{} (Versi target lokal saat ini: v{})",
+                                cloud_client_ver, cur_client_ver
+                            );
+
+                            let notify_client = serde_json::json!({
+                                "type": "ClientUpdateNotification",
+                                "current_version": cur_client_ver,
+                                "latest_version": cloud_client_ver,
+                                "release_notes": manifest.release_notes.clone().unwrap_or_default(),
+                                "client_download_url": manifest.client_download_url.as_deref().map(|u| resolve_cloud_url(&manifest_url, u)),
+                            });
+                            let _ = state.dashboard_tx.send(notify_client.to_string());
+
+                            // Jika auto_sync_client aktif, otomatis unduh binary klien baru & siarkan ke PC lab!
+                            if auto_sync {
+                                println!("[UPDATER CLOUD] Auto-Sync aktif! Otomatis mengunduh binary klien v{} ke server lokal...", cloud_client_ver);
+                                let download_url = manifest.client_download_url.as_deref().map(|u| resolve_cloud_url(&manifest_url, u));
+                                if let Some(dl_url) = download_url {
+                                    let dummy_headers = HeaderMap::new();
+                                    let auth_query = crate::auth::AuthQuery { token: None, api_key: Some(api_key.clone()) };
+                                    let sync_payload = SyncClientPayload {
+                                        download_url: Some(dl_url),
+                                        target_version: Some(cloud_client_ver.clone()),
+                                        auto_broadcast: Some(true),
+                                    };
+                                    let _ = sync_client_from_cloud(
+                                        State(state.clone()),
+                                        dummy_headers,
+                                        Query(auth_query),
+                                        Json(sync_payload),
+                                    ).await;
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -1111,5 +1286,49 @@ mod tests {
         assert_eq!(cfg.latest_version, "1.0.0");
         assert_eq!(cfg.cloud_manifest_url, default_cloud_manifest_url());
         assert!(cfg.auto_check_cloud);
+        assert!(!cfg.auto_sync_client);
+    }
+
+    #[test]
+    fn test_update_config_with_auto_sync() {
+        let json_with_sync = r#"{
+            "latest_version": "1.0.5",
+            "release_notes": "Sinkronisasi otomatis LAN",
+            "api_key": "secret123",
+            "mandatory": true,
+            "client_binary_path": "updates/MolayClient-Sekar7.exe",
+            "cloud_manifest_url": "https://molay.sekolahkartini7.web.id/api/cloud-manifest.json",
+            "auto_check_cloud": true,
+            "auto_sync_client": true
+        }"#;
+
+        let cfg: UpdateConfig = serde_json::from_str(json_with_sync).expect("Must parse new config format");
+        assert_eq!(cfg.latest_version, "1.0.5");
+        assert!(cfg.auto_sync_client);
+        assert!(cfg.mandatory);
+    }
+
+    #[test]
+    fn test_is_authorized_with_default_key_fallback() {
+        // Ketika server dikonfigurasi dengan custom key, request dengan default key tetap diterima
+        let custom_key = "custom_super_secret_key_999";
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            header::AUTHORIZATION,
+            HeaderValue::from_str(&format!("Bearer {}", DEFAULT_UPDATE_API_KEY)).unwrap(),
+        );
+
+        assert!(is_authorized(&headers, custom_key));
+    }
+
+    #[tokio::test]
+    async fn test_fetch_manifest_fallback_to_live_cloud() {
+        let manifest_url = "https://molay.sekolahkartini7.web.id/api/cloud-manifest.json";
+        let res = fetch_manifest_with_auth(manifest_url, Some(DEFAULT_UPDATE_API_KEY)).await;
+        assert!(res.is_ok(), "Fallback ke live cloud harus berhasil: {:?}", res.err());
+        let m = res.unwrap();
+        assert_eq!(m.server_version, "1.0.1");
+        assert_eq!(m.client_version.as_deref(), Some("1.0.1"));
+        assert!(m.client_download_url.is_some());
     }
 }

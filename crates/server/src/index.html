@@ -542,6 +542,39 @@
       background: var(--bg-card-hover);
     }
 
+    .preset-btn {
+      background: #0f172a;
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      padding: 5px 11px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.78rem;
+      font-weight: 500;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .preset-btn:hover {
+      background: #1e293b;
+      color: white;
+      border-color: #475569;
+    }
+    .preset-btn.active {
+      background: rgba(56, 189, 248, 0.18);
+      color: #38bdf8;
+      border-color: #38bdf8;
+      font-weight: 600;
+    }
+    th.th-sortable {
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.15s, color 0.15s;
+    }
+    th.th-sortable:hover {
+      background: #1e293b;
+      color: #f8fafc;
+    }
+
     /* Modal */
     .modal {
       display: none;
@@ -895,7 +928,11 @@
       </span>
       <span style="background: #7c3aed20; border: 1px solid #a855f750; color: #d8b4fe; padding: 5px 12px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;">
         <i class="fa-solid fa-globe" style="color: #c084fc;"></i>
-        <span>Tunnel: <a href="https://molay.sekolahkartini7.web.id" target="_blank" style="color: #e9d5ff; font-weight: 600; text-decoration: none; font-family: monospace;">molay.sekolahkartini7.web.id</a></span>
+        <span>Portal Identitas: <a href="https://molay.sekolahkartini7.web.id" target="_blank" style="color: #e9d5ff; font-weight: 600; text-decoration: none; font-family: monospace;">molay.sekolahkartini7.web.id</a></span>
+      </span>
+      <span style="background: #0284c725; border: 1px solid #38bdf860; color: #7dd3fc; padding: 5px 12px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;">
+        <i class="fa-solid fa-chalkboard-user" style="color: #38bdf8;"></i>
+        <span>Akses Guru Online: <a href="https://monitoringmolay.sekolahkartini7.web.id" target="_blank" style="color: #7dd3fc; font-weight: 600; text-decoration: underline; font-family: monospace;">monitoringmolay.sekolahkartini7.web.id</a></span>
       </span>
     </div>
     <div style="display: flex; align-items: center; gap: 10px;">
@@ -1030,32 +1067,89 @@
         </div>
       </div>
 
-      <!-- Toolbar Filter & Pencarian Interaktif -->
-      <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px 16px; margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;">
-        <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; flex: 1;">
-          <div style="position: relative; min-width: 220px; flex: 1;">
-            <input type="text" id="activitySearchInput" placeholder="🔍 Cari siswa, PC, atau aplikasi..." oninput="filterActivities()" style="padding-left: 36px; height: 38px;">
-            <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 12px; color: var(--text-muted);"></i>
+      <!-- Toolbar Filter & Sortir Interaktif -->
+      <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px 16px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 12px;">
+        <!-- Baris 1: Filter Rentang Tanggal & Preset Cepat -->
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255, 255, 255, 0.06); padding-bottom: 12px;">
+          <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
+            <span style="font-size: 0.82rem; font-weight: 700; color: var(--primary); text-transform: uppercase; display: inline-flex; align-items: center; gap: 6px;">
+              <i class="fa-solid fa-calendar-days"></i> Rentang Tanggal:
+            </span>
+            <div style="display: inline-flex; align-items: center; gap: 6px;">
+              <span style="font-size: 0.8rem; color: var(--text-muted);">Dari</span>
+              <input type="date" id="activityStartDate" style="width: auto; min-width: 135px; height: 34px; padding: 4px 8px; font-size: 0.82rem; color-scheme: dark;" onchange="onDateInputChange()">
+            </div>
+            <div style="display: inline-flex; align-items: center; gap: 6px;">
+              <span style="font-size: 0.8rem; color: var(--text-muted);">Sampai</span>
+              <input type="date" id="activityEndDate" style="width: auto; min-width: 135px; height: 34px; padding: 4px 8px; font-size: 0.82rem; color-scheme: dark;" onchange="onDateInputChange()">
+            </div>
+            <button class="btn-action" onclick="fetchActivitiesWithRange()" style="height: 34px; padding: 0 12px; background: #0284c7; color: white; font-weight: 600;" title="Terapkan filter rentang tanggal">
+              <i class="fa-solid fa-filter"></i> Terapkan
+            </button>
           </div>
-          <select id="activityCategoryFilter" onchange="filterActivities()" style="width: auto; min-width: 170px; height: 38px;">
-            <option value="ALL">Semua Kategori</option>
-            <option value="BLOCKED">🔴 Dilarang / Diblokir</option>
-            <option value="INSTALLER">🟡 Deteksi Installer</option>
-            <option value="APP">🟢 Aplikasi Normal</option>
-            <option value="KENDALA">🚨 Kendala Siswa</option>
-            <option value="SYSTEM">🔵 Kontrol Guru / Sistem</option>
-          </select>
-          <select id="activityClientFilter" onchange="filterActivities()" style="width: auto; min-width: 150px; height: 38px;">
-            <option value="ALL">Semua Komputer</option>
-          </select>
+
+          <!-- Tombol Preset Cepat -->
+          <div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center;">
+            <span style="font-size: 0.78rem; color: var(--text-muted); margin-right: 2px;">Cepat:</span>
+            <button type="button" class="preset-btn active" id="presetBtn-today" onclick="setDatePreset('today')">Hari Ini</button>
+            <button type="button" class="preset-btn" id="presetBtn-yesterday" onclick="setDatePreset('yesterday')">Kemarin</button>
+            <button type="button" class="preset-btn" id="presetBtn-7days" onclick="setDatePreset('7days')">7 Hari</button>
+            <button type="button" class="preset-btn" id="presetBtn-30days" onclick="setDatePreset('30days')">30 Hari</button>
+            <button type="button" class="preset-btn" id="presetBtn-all" onclick="setDatePreset('all')">Semua Data</button>
+          </div>
         </div>
-        <div style="display: flex; gap: 8px;">
-          <button class="btn-action" onclick="exportActivitiesToCsv()" style="background: #059669; color: white;">
-            <i class="fa-solid fa-file-csv"></i> Ekspor CSV
-          </button>
-          <button class="btn-action" onclick="fetchActivities()">
-            <i class="fa-solid fa-rotate-right"></i> Refresh
-          </button>
+
+        <!-- Baris 2: Pencarian, Kategori, Komputer, Sortir, dan Aksi -->
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between;">
+          <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; flex: 1;">
+            <div style="position: relative; min-width: 200px; flex: 1;">
+              <input type="text" id="activitySearchInput" placeholder="🔍 Cari siswa, PC, aplikasi, jendela..." oninput="filterActivities()" style="padding-left: 36px; height: 38px;">
+              <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 12px; color: var(--text-muted);"></i>
+            </div>
+            <select id="activityCategoryFilter" onchange="filterActivities()" style="width: auto; min-width: 155px; height: 38px;">
+              <option value="ALL">Semua Kategori</option>
+              <option value="BLOCKED">🔴 Dilarang / Diblokir</option>
+              <option value="INSTALLER">🟡 Deteksi Installer</option>
+              <option value="APP">🟢 Aplikasi Normal</option>
+              <option value="KENDALA">🚨 Kendala Siswa</option>
+              <option value="SYSTEM">🔵 Kontrol Guru / Sistem</option>
+            </select>
+            <select id="activityClientFilter" onchange="filterActivities()" style="width: auto; min-width: 145px; height: 38px;">
+              <option value="ALL">Semua Komputer</option>
+            </select>
+            <!-- Dropdown Sortir -->
+            <div style="display: inline-flex; align-items: center; gap: 6px;">
+              <label for="activitySortSelect" style="font-size: 0.8rem; color: var(--text-muted); margin: 0; white-space: nowrap;"><i class="fa-solid fa-arrow-down-wide-short" style="color: var(--primary);"></i> Sortir:</label>
+              <select id="activitySortSelect" onchange="applySortChange()" style="width: auto; min-width: 180px; height: 38px;">
+                <option value="time_desc">⏱️ Waktu: Terbaru &rarr; Terlama</option>
+                <option value="time_asc">⏱️ Waktu: Terlama &rarr; Terbaru</option>
+                <option value="user_asc">👤 Siswa (A &rarr; Z)</option>
+                <option value="user_desc">👤 Siswa (Z &rarr; A)</option>
+                <option value="pc_asc">💻 PC Klien (A &rarr; Z)</option>
+                <option value="pc_desc">💻 PC Klien (Z &rarr; A)</option>
+                <option value="app_asc">📦 Aplikasi (A &rarr; Z)</option>
+                <option value="app_desc">📦 Aplikasi (Z &rarr; A)</option>
+              </select>
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn-action" onclick="exportActivitiesToCsv()" style="background: #059669; color: white;" title="Ekspor daftar log aktivitas ke file CSV">
+              <i class="fa-solid fa-file-csv"></i> Ekspor CSV
+            </button>
+            <button class="btn-action" onclick="fetchActivitiesWithRange()" title="Muat ulang log aktivitas dari server">
+              <i class="fa-solid fa-rotate-right"></i> Refresh
+            </button>
+          </div>
+        </div>
+
+        <!-- Baris 3: Info Status Filter & Tanggal yang Aktif -->
+        <div id="activityRangeInfoBar" style="display: flex; justify-content: space-between; align-items: center; font-size: 0.82rem; color: #94a3b8; background: #0f172a; padding: 6px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.04);">
+          <div id="activityRangeInfoText">
+            <i class="fa-solid fa-circle-info" style="color: #38bdf8;"></i> Menampilkan: <strong id="lblActiveDateRange" style="color: #f1f5f9;">Hari Ini</strong>
+          </div>
+          <div id="activityCountBadge">
+            Ditemukan: <strong id="lblFilteredCount" style="color: #38bdf8;">0</strong> / <span id="lblTotalFetchedCount">0</span> log
+          </div>
         </div>
       </div>
 
@@ -1064,11 +1158,21 @@
         <table>
           <thead>
             <tr>
-              <th style="width: 140px;">Waktu & Tanggal</th>
-              <th style="width: 130px;">PC Klien</th>
-              <th style="width: 150px;">Siswa / User</th>
-              <th style="width: 140px;">Kategori</th>
-              <th style="width: 180px;">Aplikasi (Exe)</th>
+              <th class="th-sortable" onclick="toggleSortColumn('timestamp')" style="width: 150px;" title="Klik untuk mengurutkan waktu (Terbaru / Terlama)">
+                Waktu & Tanggal <i id="sortIcon-timestamp" class="fa-solid fa-sort-down" style="color: var(--primary); margin-left: 4px;"></i>
+              </th>
+              <th class="th-sortable" onclick="toggleSortColumn('client_id')" style="width: 130px;" title="Klik untuk mengurutkan PC klien">
+                PC Klien <i id="sortIcon-client_id" class="fa-solid fa-sort" style="opacity: 0.35; margin-left: 4px;"></i>
+              </th>
+              <th class="th-sortable" onclick="toggleSortColumn('username')" style="width: 150px;" title="Klik untuk mengurutkan nama siswa">
+                Siswa / User <i id="sortIcon-username" class="fa-solid fa-sort" style="opacity: 0.35; margin-left: 4px;"></i>
+              </th>
+              <th class="th-sortable" onclick="toggleSortColumn('category')" style="width: 140px;" title="Klik untuk mengurutkan kategori">
+                Kategori <i id="sortIcon-category" class="fa-solid fa-sort" style="opacity: 0.35; margin-left: 4px;"></i>
+              </th>
+              <th class="th-sortable" onclick="toggleSortColumn('app_name')" style="width: 180px;" title="Klik untuk mengurutkan aplikasi">
+                Aplikasi (Exe) <i id="sortIcon-app_name" class="fa-solid fa-sort" style="opacity: 0.35; margin-left: 4px;"></i>
+              </th>
               <th>Judul Jendela & Keterangan Analisis</th>
             </tr>
           </thead>
@@ -1298,10 +1402,16 @@
             <span style="color: var(--text-muted); white-space: nowrap;"><i class="fa-solid fa-link"></i> Endpoint Manifest Cloud:</span>
             <input type="text" id="cfgCloudManifestUrl" style="flex: 1; padding: 7px 12px; background: #0f172a; border: 1px solid var(--border-color); border-radius: 6px; color: #38bdf8; font-family: monospace; font-size: 0.82rem;" placeholder="https://molay.sekolahkartini7.web.id/api/cloud-manifest.json">
           </div>
-          <label style="display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: var(--text-muted); cursor: pointer;">
-            <input type="checkbox" id="cfgAutoCheckCloud" checked style="accent-color: #0284c7; transform: scale(1.15);">
-            <span>Periksa otomatis di background (tiap 1 jam)</span>
-          </label>
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: var(--text-muted); cursor: pointer;">
+              <input type="checkbox" id="cfgAutoCheckCloud" checked style="accent-color: #0284c7; transform: scale(1.15);">
+              <span>Periksa otomatis di background (tiap 1 jam)</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: #7dd3fc; cursor: pointer;">
+              <input type="checkbox" id="cfgAutoSyncClient" style="accent-color: #0284c7; transform: scale(1.15);">
+              <span>Auto-Sync Klien (Otomatis unduh rilis baru ke server & siarkan ke lab)</span>
+            </label>
+          </div>
         </div>
 
         <!-- Area Hasil Deteksi Update Cloud -->
@@ -1491,8 +1601,9 @@
             <div>
               <label style="display: block; font-size: 0.82rem; color: var(--text-muted); margin-bottom: 6px; font-weight: 500;">
                 <i class="fa-solid fa-link"></i> URL Tujuan Pengalihan (Website Resmi / Ujian):
+                <span style="color: #38bdf8; font-size: 0.75rem; font-weight: normal; margin-left: 6px;">(Gunakan awalan https://)</span>
               </label>
-              <input type="text" id="policyRedirectUrl" placeholder="https://sekolahkartini7.sch.id" style="width: 100%; padding: 8px 12px; background: #0f172a; border: 1px solid var(--border-color); border-radius: 6px; color: white; font-size: 0.9rem;">
+              <input type="text" id="policyRedirectUrl" placeholder="https://sekolahkartini7.sch.id" onblur="if(this.value.trim() && !/^https?:\/\//i.test(this.value.trim())){ this.value = 'https://' + this.value.trim(); }" style="width: 100%; padding: 8px 12px; background: #0f172a; border: 1px solid var(--border-color); border-radius: 6px; color: white; font-size: 0.9rem;">
             </div>
             <div>
               <label style="display: block; font-size: 0.82rem; color: var(--text-muted); margin-bottom: 6px; font-weight: 500;">
@@ -1514,6 +1625,173 @@
 
           <div id="redirectKeywordsChipsContainer" style="display: flex; flex-wrap: wrap; gap: 8px; min-height: 80px; max-height: 180px; overflow-y: auto; padding: 10px; background: #0f172a; border-radius: 8px; border: 1px solid var(--border-color);">
             <div style="color: var(--text-muted); font-size: 0.85rem;">Memuat daftar kata kunci pengalihan...</div>
+          </div>
+        </div>
+
+        <!-- Card 5: Deteksi Otomatis Link & Game via AI (SumoPod GLM Engine) -->
+        <div style="background: linear-gradient(145deg, #1e1b4b 0%, #0f172a 100%); padding: 22px; border-radius: 12px; border: 1px solid #6366f1; grid-column: 1 / -1; box-shadow: 0 4px 20px rgba(99, 102, 241, 0.15);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="width: 38px; height: 38px; border-radius: 8px; background: rgba(99, 102, 241, 0.25); display: flex; align-items: center; justify-content: center; color: #a5b4fc; font-size: 1.25rem;">
+                <i class="fa-solid fa-robot"></i>
+              </div>
+              <div>
+                <h3 style="font-size: 1.1rem; color: #c7d2fe; display: flex; align-items: center; gap: 8px;">
+                  Deteksi Otomatis Link & Game via AI (SumoPod GLM Engine)
+                  <span id="aiStatusBadge" class="badge-pill" style="background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.4); font-size: 0.75rem; padding: 2px 8px; border-radius: 999px;">
+                    <i class="fa-solid fa-circle-check"></i> Siap Memindai
+                  </span>
+                </h3>
+                <p style="font-size: 0.82rem; color: #94a3b8; margin-top: 2px;">
+                  Secara cerdas memindai judul jendela/situs yang dibuka siswa di lab, mendeteksi web game & link distraksi baru yang belum terdaftar, otomatis memasukkannya ke daftar blokir, dan menyebarkannya seketika ke seluruh komputer siswa.
+                </p>
+              </div>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <button class="btn-primary" onclick="triggerAiScan()" id="btnAiScan" style="background: #4f46e5; border: 1px solid #818cf8; font-weight: 600;">
+                <i class="fa-solid fa-magnifying-glass-chart"></i> Pindai Aktivitas Lab Sekarang
+              </button>
+            </div>
+          </div>
+
+          <!-- Controls Grid -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-bottom: 16px; background: rgba(15, 23, 42, 0.7); padding: 14px; border-radius: 8px; border: 1px solid rgba(99, 102, 241, 0.3);">
+            <div>
+              <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; color: white; font-weight: 600;">
+                <input type="checkbox" id="aiAutoBlockToggle" onchange="toggleAiAutoBlock(this.checked)" style="width: 20px; height: 20px; accent-color: #6366f1;">
+                <span>⚡ Auto-Block Seketika (Otomatis Tambah ke Blacklist & Tutup Tab Siswa)</span>
+              </label>
+              <p style="font-size: 0.78rem; color: #94a3b8; margin-left: 30px; margin-top: 2px;">
+                Jika aktif, setiap web game baru yang terdeteksi AI langsung otomatis dimasukkan ke filter pengalihan tanpa harus input manual oleh guru.
+              </p>
+            </div>
+            <div style="display: flex; flex-direction: column; justify-content: center; gap: 4px; font-size: 0.82rem; color: #cbd5e1;">
+              <div><strong>Model AI:</strong> <code style="color: #a5b4fc;">glm-5.3-flash</code> (SumoPod AI API)</div>
+              <div><strong>Status Pemindaian Terakhir:</strong> <span id="aiLastScanTime" style="color: #94a3b8;">Belum pernah dipindai</span></div>
+              <div><strong>Total Game Terdeteksi AI:</strong> <span id="aiTotalDetectedCount" style="color: #38bdf8; font-weight: bold;">0</span> item</div>
+            </div>
+          </div>
+
+          <!-- Quick Test Form -->
+          <div style="margin-bottom: 16px;">
+            <label style="display: block; font-size: 0.82rem; color: #c7d2fe; margin-bottom: 6px; font-weight: 600;">
+              <i class="fa-solid fa-flask"></i> Uji Coba Cepat AI (Tes Judul Website / Game / URL):
+            </label>
+            <div style="display: flex; gap: 8px;">
+              <input type="text" id="aiTestInput" placeholder="Contoh: Subway Surfers Online - Poki Games atau 1v1.lol atau Otakudesu Anime" style="flex: 1; padding: 8px 12px; background: #0f172a; border: 1px solid #6366f1; border-radius: 6px; color: white; font-size: 0.9rem;" onkeydown="if(event.key==='Enter'){event.preventDefault(); testAiSingleTitle();}">
+              <button class="btn-action" onclick="testAiSingleTitle()" id="btnAiTest" style="background: rgba(99, 102, 241, 0.2); color: #c7d2fe; border: 1px solid #6366f1; white-space: nowrap;">
+                <i class="fa-solid fa-vial"></i> Uji AI
+              </button>
+            </div>
+            <div id="aiTestResultBox" style="display: none; margin-top: 10px; padding: 10px 14px; border-radius: 6px; font-size: 0.85rem;"></div>
+          </div>
+
+          <!-- Recent AI Detections List -->
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span style="font-size: 0.85rem; font-weight: 600; color: #c7d2fe;">
+                <i class="fa-solid fa-list-check"></i> Riwayat Temuan Game & Link Distraksi oleh AI:
+              </span>
+              <span style="font-size: 0.75rem; color: #94a3b8;">Dilindungi Whitelist Edukasi (Google Classroom, Docs, Wikipedia dll. aman)</span>
+            </div>
+            <div id="aiDetectionsContainer" style="display: flex; flex-direction: column; gap: 8px; max-height: 240px; overflow-y: auto; padding: 10px; background: #0a0f1d; border-radius: 8px; border: 1px solid rgba(99, 102, 241, 0.25);">
+              <div style="color: #64748b; font-size: 0.85rem; text-align: center; padding: 12px;">Belum ada temuan game baru yang terdeteksi AI. Klik "Pindai Aktivitas Lab Sekarang" untuk memulai.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 6: Pengecualian Akses Lab (Whitelist & Batas Waktu Otomatis) -->
+        <div id="cardExemptionManager" style="background: linear-gradient(145deg, #064e3b 0%, #0f172a 100%); padding: 22px; border-radius: 12px; border: 1px solid #10b981; grid-column: 1 / -1; box-shadow: 0 4px 20px rgba(16, 185, 129, 0.15);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="width: 38px; height: 38px; border-radius: 8px; background: rgba(16, 185, 129, 0.25); display: flex; align-items: center; justify-content: center; color: #6ee7b7; font-size: 1.25rem;">
+                <i class="fa-solid fa-user-shield"></i>
+              </div>
+              <div>
+                <h3 style="font-size: 1.1rem; color: #a7f3d0; display: flex; align-items: center; gap: 8px;">
+                  Pengecualian Akses Lab (Whitelist & Batas Waktu Otomatis)
+                  <span id="exemptionActiveCountBadge" class="badge-pill" style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); font-size: 0.75rem; padding: 2px 8px; border-radius: 999px;">
+                    0 Pengecualian Aktif
+                  </span>
+                </h3>
+                <p style="font-size: 0.82rem; color: #94a3b8; margin-top: 2px;">
+                  Berikan izin akses sementara atau permanen untuk website / aplikasi tertentu. Sistem otomatis memblokir kembali setelah batas waktu berakhir.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Form Tambah Pengecualian -->
+          <div style="background: rgba(15, 23, 42, 0.75); padding: 16px; border-radius: 8px; border: 1px solid rgba(16, 185, 129, 0.25); margin-bottom: 18px;">
+            <div style="font-size: 0.88rem; font-weight: 600; color: #d1fae5; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-plus-circle"></i> Tambah Pengecualian Akses Baru
+            </div>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 14px;">
+              <div>
+                <label style="display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 6px;">
+                  Target Website / Aplikasi / Kata Kunci:
+                </label>
+                <input type="text" id="newExemptionTarget" placeholder="Misal: poki.com, discord.exe, canva" style="width: 100%; padding: 8px 12px; background: #0f172a; border: 1px solid #334155; border-radius: 6px; color: white; font-size: 0.9rem;">
+              </div>
+
+              <div>
+                <label style="display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 6px;">
+                  Model Batas Waktu:
+                </label>
+                <select id="newExemptionType" onchange="toggleExemptionTimeInputs()" style="width: 100%; padding: 8px 12px; background: #0f172a; border: 1px solid #334155; border-radius: 6px; color: white; font-size: 0.9rem;">
+                  <option value="timed_preset">Batas Waktu (Preset Menit/Jam)</option>
+                  <option value="timed_custom">Batas Waktu (Tanggal & Waktu Spesifik)</option>
+                  <option value="permanent">Pengecualian Permanen (Tanpa Batas Waktu)</option>
+                </select>
+              </div>
+
+              <div id="exemptionPresetDurationWrapper">
+                <label style="display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 6px;">
+                  Durasi Akses Diizinkan:
+                </label>
+                <select id="newExemptionPresetMins" style="width: 100%; padding: 8px 12px; background: #0f172a; border: 1px solid #334155; border-radius: 6px; color: white; font-size: 0.9rem;">
+                  <option value="15">15 Menit</option>
+                  <option value="30">30 Menit</option>
+                  <option value="45" selected>45 Menit (1 Jam Pelajaran)</option>
+                  <option value="90">90 Menit (2 Jam Pelajaran)</option>
+                  <option value="120">120 Menit (2 Jam Penuh)</option>
+                  <option value="240">4 Jam (Hingga Akhir Sesi Lab)</option>
+                </select>
+              </div>
+
+              <div id="exemptionCustomTimeWrapper" style="display: none;">
+                <label style="display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 6px;">
+                  Berlaku Sampai (Tanggal & Jam):
+                </label>
+                <input type="datetime-local" id="newExemptionCustomDate" style="width: 100%; padding: 7px 12px; background: #0f172a; border: 1px solid #334155; border-radius: 6px; color: white; font-size: 0.88rem;">
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap;">
+              <div style="flex: 1; min-width: 220px;">
+                <label style="display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 6px;">
+                  Catatan Alasan Izin (Opsional):
+                </label>
+                <input type="text" id="newExemptionReason" placeholder="Misal: Tugas Praktik Desain Kelas 7B" style="width: 100%; padding: 8px 12px; background: #0f172a; border: 1px solid #334155; border-radius: 6px; color: white; font-size: 0.9rem;">
+              </div>
+              <button class="btn-primary" onclick="submitAddExemption()" style="background: #059669; border: 1px solid #10b981; padding: 9px 20px; font-weight: 600; white-space: nowrap;">
+                <i class="fa-solid fa-check"></i> Aktifkan Pengecualian
+              </button>
+            </div>
+          </div>
+
+          <!-- Tabel Real-time Pengecualian -->
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span style="font-size: 0.85rem; font-weight: 600; color: #a7f3d0;">
+                <i class="fa-solid fa-list-ol"></i> Daftar Pengecualian Aktif di Seluruh PC Siswa:
+              </span>
+              <span style="font-size: 0.75rem; color: #94a3b8;">Hitungan mundur sisa waktu diperbarui setiap detik</span>
+            </div>
+            <div id="exemptionsTableContainer" style="display: flex; flex-direction: column; gap: 8px; max-height: 280px; overflow-y: auto; padding: 10px; background: #0a0f1d; border-radius: 8px; border: 1px solid rgba(16, 185, 129, 0.25);">
+              <div style="color: #64748b; font-size: 0.85rem; text-align: center; padding: 12px;">Belum ada aturan pengecualian aktif.</div>
+            </div>
           </div>
         </div>
       </div>
@@ -2037,7 +2315,7 @@ console.log('Ringkasan Siswa:', data.ringkasan);</pre>
       if (tabId === 'activity-log') fetchActivities();
       if (tabId === 'user-mgmt') { fetchUsers(); fetchClientAuthMode(); }
       if (tabId === 'system-update') fetchUpdateConfig();
-      if (tabId === 'app-policy') fetchAppPolicy();
+      if (tabId === 'app-policy') { fetchAppPolicy(); fetchAiDetectorConfig(); }
       if (tabId === 'api-sync') fetchServiceKeys();
     }
 
@@ -2101,6 +2379,9 @@ console.log('Ringkasan Siswa:', data.ringkasan);</pre>
         } else if (msg.type === "PolicyUpdated") {
           currentAppPolicy = msg.policy;
           renderPolicyUi();
+        } else if (msg.type === "AiAutoBlockDetected") {
+          fetchAiDetectorConfig();
+          fetchAppPolicy();
         } else if (msg.type === "AuthModeUpdated") {
           currentClientAuthConfig = msg.config;
           renderAuthModeUi(msg.config);
@@ -2879,6 +3160,124 @@ console.log('Ringkasan Siswa:', data.ringkasan);</pre>
 
     let allActivities = [];
     let currentAppPolicy = null;
+    let currentSortCol = 'timestamp';
+    let currentSortDir = 'desc'; // 'desc' | 'asc'
+    let currentRangePreset = 'today';
+    let isInitialActivitiesLoaded = false;
+
+    function getWibDateString(dateObj) {
+      const d = dateObj || new Date();
+      // WIB adalah UTC+7
+      const utcMs = d.getTime() + (d.getTimezoneOffset() * 60000);
+      const wibMs = utcMs + (7 * 3600000);
+      return new Date(wibMs).toISOString().slice(0, 10);
+    }
+
+    function initActivityDateInputs() {
+      const todayStr = getWibDateString();
+      const elStart = document.getElementById('activityStartDate');
+      const elEnd = document.getElementById('activityEndDate');
+      if (elStart && !elStart.value) elStart.value = todayStr;
+      if (elEnd && !elEnd.value) elEnd.value = todayStr;
+    }
+
+    function setDatePreset(preset) {
+      currentRangePreset = preset;
+      const elStart = document.getElementById('activityStartDate');
+      const elEnd = document.getElementById('activityEndDate');
+      const now = new Date();
+
+      document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active'));
+      const activeBtn = document.getElementById(`presetBtn-${preset}`);
+      if (activeBtn) activeBtn.classList.add('active');
+
+      if (preset === 'today') {
+        const todayStr = getWibDateString(now);
+        if (elStart) elStart.value = todayStr;
+        if (elEnd) elEnd.value = todayStr;
+      } else if (preset === 'yesterday') {
+        const yest = new Date(now.getTime() - 24 * 3600000);
+        const yestStr = getWibDateString(yest);
+        if (elStart) elStart.value = yestStr;
+        if (elEnd) elEnd.value = yestStr;
+      } else if (preset === '7days') {
+        const past7 = new Date(now.getTime() - 6 * 24 * 3600000);
+        if (elStart) elStart.value = getWibDateString(past7);
+        if (elEnd) elEnd.value = getWibDateString(now);
+      } else if (preset === '30days') {
+        const past30 = new Date(now.getTime() - 29 * 24 * 3600000);
+        if (elStart) elStart.value = getWibDateString(past30);
+        if (elEnd) elEnd.value = getWibDateString(now);
+      } else if (preset === 'all') {
+        if (elStart) elStart.value = '';
+        if (elEnd) elEnd.value = '';
+      }
+
+      fetchActivitiesWithRange();
+    }
+
+    function onDateInputChange() {
+      document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active'));
+      currentRangePreset = 'custom';
+    }
+
+    function updateSortIcons() {
+      const cols = ['timestamp', 'client_id', 'username', 'category', 'app_name'];
+      for (const col of cols) {
+        const icon = document.getElementById(`sortIcon-${col}`);
+        if (!icon) continue;
+        if (col === currentSortCol) {
+          icon.style.opacity = '1';
+          icon.style.color = 'var(--primary)';
+          icon.className = currentSortDir === 'asc' ? 'fa-solid fa-sort-up' : 'fa-solid fa-sort-down';
+        } else {
+          icon.style.opacity = '0.35';
+          icon.style.color = 'inherit';
+          icon.className = 'fa-solid fa-sort';
+        }
+      }
+
+      const sortSelect = document.getElementById('activitySortSelect');
+      if (sortSelect) {
+        let prefix = 'time';
+        if (currentSortCol === 'username') prefix = 'user';
+        else if (currentSortCol === 'client_id') prefix = 'pc';
+        else if (currentSortCol === 'app_name') prefix = 'app';
+        else if (currentSortCol === 'timestamp') prefix = 'time';
+        const targetVal = `${prefix}_${currentSortDir}`;
+        if (sortSelect.querySelector(`option[value="${targetVal}"]`)) {
+          sortSelect.value = targetVal;
+        }
+      }
+    }
+
+    function toggleSortColumn(col) {
+      if (currentSortCol === col) {
+        currentSortDir = currentSortDir === 'asc' ? 'desc' : 'asc';
+      } else {
+        currentSortCol = col;
+        currentSortDir = (col === 'timestamp') ? 'desc' : 'asc';
+      }
+      updateSortIcons();
+      filterActivities();
+    }
+
+    function applySortChange() {
+      const sortSelect = document.getElementById('activitySortSelect');
+      if (!sortSelect) return;
+      const val = sortSelect.value;
+      if (val === 'time_desc') { currentSortCol = 'timestamp'; currentSortDir = 'desc'; }
+      else if (val === 'time_asc') { currentSortCol = 'timestamp'; currentSortDir = 'asc'; }
+      else if (val === 'user_asc') { currentSortCol = 'username'; currentSortDir = 'asc'; }
+      else if (val === 'user_desc') { currentSortCol = 'username'; currentSortDir = 'desc'; }
+      else if (val === 'pc_asc') { currentSortCol = 'client_id'; currentSortDir = 'asc'; }
+      else if (val === 'pc_desc') { currentSortCol = 'client_id'; currentSortDir = 'desc'; }
+      else if (val === 'app_asc') { currentSortCol = 'app_name'; currentSortDir = 'asc'; }
+      else if (val === 'app_desc') { currentSortCol = 'app_name'; currentSortDir = 'desc'; }
+
+      updateSortIcons();
+      filterActivities();
+    }
 
     function renderActivityRow(act) {
       const cat = (act.category || '').toUpperCase();
@@ -2980,7 +3379,7 @@ console.log('Ringkasan Siswa:', data.ringkasan);</pre>
       const catFilter = document.getElementById('activityCategoryFilter')?.value || 'ALL';
       const clientFilter = document.getElementById('activityClientFilter')?.value || 'ALL';
 
-      const filtered = allActivities.filter(act => {
+      let filtered = allActivities.filter(act => {
         const cat = (act.category || '').toUpperCase();
         const isBlocked = cat === 'BLOCKED' || (act.details && act.details.includes('ditutup'));
         const isInstaller = cat === 'INSTALLER' || (act.app_name && (act.app_name.toLowerCase().includes('setup') || act.app_name.toLowerCase().includes('install')));
@@ -3007,6 +3406,36 @@ console.log('Ringkasan Siswa:', data.ringkasan);</pre>
         return true;
       });
 
+      // Lakukan sortir (Sorting)
+      filtered.sort((a, b) => {
+        let valA, valB;
+        if (currentSortCol === 'timestamp') {
+          valA = new Date(a.timestamp).getTime();
+          valB = new Date(b.timestamp).getTime();
+          return currentSortDir === 'asc' ? (valA - valB) : (valB - valA);
+        } else if (currentSortCol === 'client_id') {
+          valA = (a.client_id || '').toLowerCase();
+          valB = (b.client_id || '').toLowerCase();
+        } else if (currentSortCol === 'username') {
+          valA = (a.username || '').toLowerCase();
+          valB = (b.username || '').toLowerCase();
+        } else if (currentSortCol === 'category') {
+          valA = (a.category || '').toLowerCase();
+          valB = (b.category || '').toLowerCase();
+        } else if (currentSortCol === 'app_name') {
+          valA = (a.app_name || '').toLowerCase();
+          valB = (b.app_name || '').toLowerCase();
+        } else {
+          return 0;
+        }
+
+        const cmp = valA.localeCompare(valB);
+        return currentSortDir === 'asc' ? cmp : -cmp;
+      });
+
+      const countBadge = document.getElementById('lblFilteredCount');
+      if (countBadge) countBadge.textContent = filtered.length;
+
       const tbody = document.getElementById('activityTableBody');
       if (!tbody) return;
 
@@ -3017,14 +3446,59 @@ console.log('Ringkasan Siswa:', data.ringkasan);</pre>
       }
     }
 
-    async function fetchActivities() {
+    async function fetchActivitiesWithRange() {
       try {
-        // Ambil semua aktivitas hari ini (WIB), dengan fallback ke 2000 terbaru
-        const todayWib = new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 10); // YYYY-MM-DD WIB
-        const res = await authFetch(`/api/activities?tanggal=${todayWib}&limit=2000`);
-        const data = await res.json();
-        allActivities = Array.isArray(data) ? data : [];
-        
+        initActivityDateInputs();
+        const elStart = document.getElementById('activityStartDate');
+        const elEnd = document.getElementById('activityEndDate');
+        let startDate = elStart ? elStart.value.trim() : '';
+        let endDate = elEnd ? elEnd.value.trim() : '';
+
+        let url = '/api/activities?limit=5000';
+        let rangeLabel = '';
+
+        if (!startDate && !endDate) {
+          url += '&tanggal=all';
+          rangeLabel = 'Semua Data Riwayat';
+        } else if (startDate && endDate && startDate === endDate) {
+          url += `&tanggal=${startDate}`;
+          rangeLabel = `Tanggal ${startDate}`;
+        } else {
+          if (startDate) url += `&dari_tanggal=${startDate}`;
+          if (endDate) url += `&sampai_tanggal=${endDate}`;
+          rangeLabel = `${startDate || 'Awal'} s.d. ${endDate || 'Sekarang'}`;
+        }
+
+        const res = await authFetch(url);
+        let data = await res.json();
+        let acts = Array.isArray(data) ? data : [];
+
+        // Smart fallback pada load awal: jika hari ini belum ada aktivitas lab baru,
+        // muat semua riwayat agar guru/admin tidak mendapati tabel kosong
+        if (!isInitialActivitiesLoaded && currentRangePreset === 'today' && acts.length === 0) {
+          isInitialActivitiesLoaded = true;
+          const fallbackRes = await authFetch('/api/activities?tanggal=all&limit=5000');
+          const fallbackData = await fallbackRes.json();
+          if (Array.isArray(fallbackData) && fallbackData.length > 0) {
+            acts = fallbackData;
+            rangeLabel = 'Semua Riwayat (Hari ini belum ada aktivitas baru)';
+            if (elStart) elStart.value = '';
+            if (elEnd) elEnd.value = '';
+            document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active'));
+            const btnAll = document.getElementById('presetBtn-all');
+            if (btnAll) btnAll.classList.add('active');
+            currentRangePreset = 'all';
+          }
+        }
+        isInitialActivitiesLoaded = true;
+
+        allActivities = acts;
+
+        const lblRange = document.getElementById('lblActiveDateRange');
+        if (lblRange) lblRange.textContent = rangeLabel;
+        const lblTotal = document.getElementById('lblTotalFetchedCount');
+        if (lblTotal) lblTotal.textContent = allActivities.length;
+
         // Perbarui dropdown filter PC klien
         const clientFilter = document.getElementById('activityClientFilter');
         if (clientFilter) {
@@ -3032,7 +3506,7 @@ console.log('Ringkasan Siswa:', data.ringkasan);</pre>
           const clientSet = new Set(allActivities.map(a => a.client_id));
           clientFilter.innerHTML = '<option value="ALL">Semua Komputer</option>' + 
             Array.from(clientSet).sort().map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
-          clientFilter.value = selected;
+          clientFilter.value = clientSet.has(selected) ? selected : 'ALL';
         }
 
         updateActivityStats();
@@ -3042,10 +3516,28 @@ console.log('Ringkasan Siswa:', data.ringkasan);</pre>
       }
     }
 
+    async function fetchActivities() {
+      // Backward compatibility function caller
+      await fetchActivitiesWithRange();
+    }
+
     function exportActivitiesToCsv() {
       if (allActivities.length === 0) {
         alert("Belum ada data log aktivitas untuk diekspor!");
         return;
+      }
+
+      const elStart = document.getElementById('activityStartDate');
+      const elEnd = document.getElementById('activityEndDate');
+      const sVal = elStart?.value.trim();
+      const eVal = elEnd?.value.trim();
+      let fileDatePart = '';
+      if (sVal && eVal && sVal === eVal) {
+        fileDatePart = sVal;
+      } else if (sVal || eVal) {
+        fileDatePart = `${sVal || 'awal'}_sd_${eVal || 'sekarang'}`;
+      } else {
+        fileDatePart = 'semua_' + new Date().toISOString().slice(0, 10);
       }
 
       const headers = ["Waktu", "PC Klien", "Username / Siswa", "Kategori", "Aplikasi", "Judul Jendela", "Detail / Tindakan"];
@@ -3066,9 +3558,8 @@ console.log('Ringkasan Siswa:', data.ringkasan);</pre>
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
-      const dateStr = new Date().toISOString().slice(0, 10);
       link.setAttribute("href", url);
-      link.setAttribute("download", `log_aktivitas_molay_${dateStr}.csv`);
+      link.setAttribute("download", `log_aktivitas_molay_${fileDatePart}.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -3119,6 +3610,7 @@ console.log('Ringkasan Siswa:', data.ringkasan);</pre>
       if (elTargetExe) elTargetExe.value = br.target_browser_exe || "";
 
       renderRedirectKeywordsChips();
+      renderExemptionsList();
     }
 
     function renderRedirectKeywordsChips() {
@@ -3311,7 +3803,14 @@ console.log('Ringkasan Siswa:', data.ringkasan);</pre>
       const elTargetExe = document.getElementById('policyTargetBrowserExe');
 
       if (elRedirEnabled) currentAppPolicy.browser_redirect.enabled = elRedirEnabled.checked;
-      if (elRedirUrl) currentAppPolicy.browser_redirect.redirect_url = elRedirUrl.value.trim() || "https://sekolahkartini7.sch.id";
+      if (elRedirUrl) {
+        let val = elRedirUrl.value.trim();
+        if (val && !/^https?:\/\//i.test(val)) {
+          val = 'https://' + val;
+          elRedirUrl.value = val;
+        }
+        currentAppPolicy.browser_redirect.redirect_url = val || "https://sekolahkartini7.sch.id";
+      }
       if (elCloseOrig) currentAppPolicy.browser_redirect.close_original_window = elCloseOrig.checked;
       if (elTargetExe) currentAppPolicy.browser_redirect.target_browser_exe = elTargetExe.value.trim();
 
@@ -3327,6 +3826,491 @@ console.log('Ringkasan Siswa:', data.ringkasan);</pre>
         alert("Gagal menyimpan kebijakan aplikasi: " + err.message);
       }
     }
+
+    // ==========================================
+    // AI DETECTOR & AUTO-BLOCK FUNCTIONS
+    // ==========================================
+    let currentAiConfig = null;
+
+    async function fetchAiDetectorConfig() {
+      try {
+        const res = await authFetch('/api/policy/ai-detector/config');
+        if (!res.ok) return;
+        currentAiConfig = await res.json();
+        renderAiDetectorUi();
+      } catch (err) {
+        console.error("Gagal memuat konfigurasi AI Detector:", err);
+      }
+    }
+
+    function renderAiDetectorUi() {
+      if (!currentAiConfig) return;
+      const toggle = document.getElementById('aiAutoBlockToggle');
+      if (toggle) toggle.checked = !!currentAiConfig.auto_block_enabled;
+
+      const badge = document.getElementById('aiStatusBadge');
+      if (badge) {
+        if (currentAiConfig.auto_block_enabled) {
+          badge.className = 'badge-pill';
+          badge.style.background = 'rgba(34, 197, 94, 0.2)';
+          badge.style.color = '#4ade80';
+          badge.style.border = '1px solid rgba(34, 197, 94, 0.4)';
+          badge.innerHTML = '<i class="fa-solid fa-bolt"></i> Auto-Block Aktif';
+        } else {
+          badge.className = 'badge-pill';
+          badge.style.background = 'rgba(148, 163, 184, 0.2)';
+          badge.style.color = '#94a3b8';
+          badge.style.border = '1px solid rgba(148, 163, 184, 0.4)';
+          badge.innerHTML = '<i class="fa-solid fa-pause"></i> Auto-Block Nonaktif';
+        }
+      }
+
+      const lastScanEl = document.getElementById('aiLastScanTime');
+      if (lastScanEl) {
+        if (currentAiConfig.last_scan_time) {
+          const d = new Date(currentAiConfig.last_scan_time);
+          lastScanEl.innerText = d.toLocaleTimeString() + ' (' + d.toLocaleDateString() + ')';
+        } else {
+          lastScanEl.innerText = 'Belum pernah dipindai';
+        }
+      }
+
+      const totalCountEl = document.getElementById('aiTotalDetectedCount');
+      if (totalCountEl) {
+        totalCountEl.innerText = currentAiConfig.total_detected_count || 0;
+      }
+
+      renderAiDetectionsList(currentAiConfig.recent_detections || []);
+    }
+
+    function renderAiDetectionsList(list) {
+      const container = document.getElementById('aiDetectionsContainer');
+      if (!container) return;
+      if (!list || list.length === 0) {
+        container.innerHTML = '<div style="color: #64748b; font-size: 0.85rem; text-align: center; padding: 12px;">Belum ada temuan game baru yang terdeteksi AI. Klik "Pindai Aktivitas Lab Sekarang" untuk memulai.</div>';
+        return;
+      }
+
+      container.innerHTML = list.map(item => {
+        const isGame = item.category.toLowerCase().includes('game');
+        const badgeColor = isGame ? '#f87171' : '#fbbf24';
+        const badgeBg = isGame ? 'rgba(239, 68, 68, 0.2)' : 'rgba(245, 158, 11, 0.2)';
+        const autoBadge = item.auto_blocked 
+          ? '<span style="background: rgba(34, 197, 94, 0.15); color: #4ade80; padding: 2px 6px; border-radius: 4px; font-size: 0.72rem; border: 1px solid rgba(34, 197, 94, 0.3);"><i class="fa-solid fa-shield-halved"></i> Terblokir Otomatis</span>'
+          : '<span style="background: rgba(148, 163, 184, 0.15); color: #94a3b8; padding: 2px 6px; border-radius: 4px; font-size: 0.72rem;">Terdeteksi</span>';
+
+        return `
+          <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(30, 41, 59, 0.6); padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(99, 102, 241, 0.2); flex-wrap: wrap; gap: 8px;">
+            <div style="display: flex; flex-direction: column; gap: 3px;">
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <span style="font-size: 0.72rem; font-weight: bold; background: ${badgeBg}; color: ${badgeColor}; padding: 1px 6px; border-radius: 4px; text-transform: uppercase;">${escapeHtml(item.category)}</span>
+                <strong style="color: #f1f5f9; font-size: 0.88rem;">${escapeHtml(item.target)}</strong>
+                ${autoBadge}
+              </div>
+              <div style="font-size: 0.8rem; color: #94a3b8;">
+                ${escapeHtml(item.reason)} &bull; Filter keyword: <code style="color: #38bdf8;">${escapeHtml(item.keyword)}</code>
+              </div>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+              <button class="btn-action" onclick="openExemptionQuickModal('${escapeHtml(item.keyword)}', '${escapeHtml(item.target)}')" style="font-size: 0.75rem; padding: 4px 10px; color: #34d399; border-color: rgba(52, 211, 153, 0.4); background: rgba(52, 211, 153, 0.12); font-weight: 600;" title="Beri izin akses pengecualian (Batas Waktu / Permanen)">
+                <i class="fa-solid fa-shield-halved"></i> Beri Pengecualian
+              </button>
+              <button class="btn-action" onclick="removeAiKeyword('${escapeHtml(item.keyword)}')" style="font-size: 0.75rem; padding: 4px 8px; color: #f87171; border-color: rgba(239, 68, 68, 0.3);" title="Hapus dari daftar blokir">
+                <i class="fa-solid fa-trash-can"></i> Hapus Filter
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function toggleAiAutoBlock(checked) {
+      try {
+        const res = await authFetch('/api/policy/ai-detector/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ auto_block_enabled: checked })
+        });
+        const data = await res.json();
+        if (data.config) {
+          currentAiConfig = data.config;
+          renderAiDetectorUi();
+        }
+      } catch (err) {
+        alert("Gagal mengubah setting Auto-Block: " + err.message);
+      }
+    }
+
+    async function triggerAiScan() {
+      const btn = document.getElementById('btnAiScan');
+      const originalText = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memindai via AI...';
+      }
+
+      try {
+        const res = await authFetch('/api/policy/ai-detector/scan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+        const data = await res.json();
+
+        if (data.status === 'ok') {
+          let msg = `Pemindaian selesai! Menganalisis ${data.scanned_candidates_count || 0} judul jendela.`;
+          if (data.detected_count > 0) {
+            msg += `\n🎯 Ditemukan ${data.detected_count} link/game tidak bermanfaat!`;
+            if (data.newly_blocked && data.newly_blocked.length > 0) {
+              msg += `\n🛡️ ${data.newly_blocked.length} kata kunci baru otomatis dimasukkan ke daftar blokir dan disiarkan ke semua PC klien: ${data.newly_blocked.join(', ')}`;
+            }
+          } else {
+            msg += `\n✅ Seluruh aktivitas siswa saat ini aman / edukatif (tidak ada game terdeteksi).`;
+          }
+          alert(msg);
+          await fetchAiDetectorConfig();
+          await fetchAppPolicy();
+        } else {
+          alert("Gagal memindai: " + (data.error || "Terjadi kesalahan"));
+        }
+      } catch (err) {
+        alert("Error menghubungi server AI: " + err.message);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = originalText;
+        }
+      }
+    }
+
+    async function testAiSingleTitle() {
+      const input = document.getElementById('aiTestInput');
+      const box = document.getElementById('aiTestResultBox');
+      const btn = document.getElementById('btnAiTest');
+      if (!input || !box) return;
+      const text = input.value.trim();
+      if (!text) {
+        alert("Ketikkan judul jendela atau nama situs terlebih dahulu.");
+        return;
+      }
+
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menguji...';
+      }
+
+      box.style.display = 'block';
+      box.style.background = '#1e293b';
+      box.style.border = '1px solid #475569';
+      box.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menghubungi SumoPod GLM AI...';
+
+      try {
+        const res = await authFetch('/api/policy/ai-detector/test', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title_or_url: text })
+        });
+        const data = await res.json();
+
+        if (data.status === 'ok') {
+          if (data.is_unproductive && data.details && data.details.length > 0) {
+            const item = data.details[0];
+            box.style.background = 'rgba(239, 68, 68, 0.15)';
+            box.style.border = '1px solid rgba(239, 68, 68, 0.4)';
+            box.innerHTML = `
+              <div style="color: #f87171; font-weight: bold; margin-bottom: 4px;">
+                <i class="fa-solid fa-triangle-exclamation"></i> TERDETEKSI: ${escapeHtml(item.target)} (${escapeHtml(item.category.toUpperCase())})
+              </div>
+              <div style="color: #cbd5e1; margin-bottom: 6px;">${escapeHtml(item.reason)} (Confidence: ${(item.confidence * 100).toFixed(0)}%)</div>
+              <div style="display: flex; gap: 8px; align-items: center; margin-top: 8px;">
+                <span style="color: #94a3b8; font-size: 0.8rem;">Kata kunci usulan: <code style="color: #38bdf8;">${escapeHtml(item.keyword)}</code></span>
+                <button class="btn-primary" onclick="addCustomAiKeyword('${escapeHtml(item.keyword)}')" style="padding: 3px 8px; font-size: 0.75rem; background: #dc2626;">
+                  <i class="fa-solid fa-ban"></i> Blokir Kata Kunci Ini Sekarang
+                </button>
+              </div>
+            `;
+          } else {
+            box.style.background = 'rgba(34, 197, 94, 0.15)';
+            box.style.border = '1px solid rgba(34, 197, 94, 0.4)';
+            box.innerHTML = `
+              <div style="color: #4ade80; font-weight: bold;">
+                <i class="fa-solid fa-circle-check"></i> AMAN / PRODUKTIF
+              </div>
+              <div style="color: #cbd5e1; margin-top: 2px;">
+                AI mengklasifikasikan judul ini sebagai materi edukasi/pembelajaran aman atau bukan game.
+              </div>
+            `;
+          }
+        } else {
+          box.style.background = 'rgba(239, 68, 68, 0.15)';
+          box.style.border = '1px solid rgba(239, 68, 68, 0.4)';
+          box.innerHTML = `<span style="color: #f87171;">Error: ${escapeHtml(data.error || 'Gagal memproses')}</span>`;
+        }
+      } catch (err) {
+        box.style.background = 'rgba(239, 68, 68, 0.15)';
+        box.style.border = '1px solid rgba(239, 68, 68, 0.4)';
+        box.innerHTML = `<span style="color: #f87171;">Koneksi gagal: ${escapeHtml(err.message)}</span>`;
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-vial"></i> Uji AI';
+        }
+      }
+    }
+
+    async function addCustomAiKeyword(keyword) {
+      const clean = keyword.trim().toLowerCase();
+      if (!clean) return;
+      if (!currentAppPolicy) currentAppPolicy = { block_installers: true, alert_on_installer: true, blocked_apps: [], blocked_keywords: [] };
+      if (!currentAppPolicy.browser_redirect) {
+        currentAppPolicy.browser_redirect = {
+          enabled: true,
+          trigger_keywords: [],
+          target_browser_exe: "",
+          target_browser_args: null,
+          redirect_url: "https://sekolahkartini7.sch.id",
+          close_original_window: true,
+          cooldown_seconds: 3
+        };
+      }
+      if (!currentAppPolicy.browser_redirect.trigger_keywords.includes(clean)) {
+        currentAppPolicy.browser_redirect.trigger_keywords.push(clean);
+        renderRedirectKeywordsChips();
+        await saveAppPolicy();
+      } else {
+        alert("Kata kunci '" + clean + "' sudah ada di dalam daftar blokir.");
+      }
+    }
+
+    async function removeAiKeyword(keyword) {
+      if (!confirm(`Hapus kata kunci '${keyword}' dari daftar blokir lab?`)) return;
+      try {
+        const res = await authFetch('/api/policy/ai-detector/remove-keyword', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ keyword })
+        });
+        const data = await res.json();
+        alert(data.message || "Selesai");
+        await fetchAppPolicy();
+        await fetchAiDetectorConfig();
+      } catch (err) {
+        alert("Gagal menghapus kata kunci: " + err.message);
+      }
+    }
+
+    // ==========================================
+    // ACCESS EXEMPTIONS (WHITELIST & TIMED)
+    // ==========================================
+    function toggleExemptionTimeInputs() {
+      const type = document.getElementById('newExemptionType')?.value;
+      const presetWrap = document.getElementById('exemptionPresetDurationWrapper');
+      const customWrap = document.getElementById('exemptionCustomTimeWrapper');
+      if (!presetWrap || !customWrap) return;
+
+      if (type === 'timed_preset') {
+        presetWrap.style.display = 'block';
+        customWrap.style.display = 'none';
+      } else if (type === 'timed_custom') {
+        presetWrap.style.display = 'none';
+        customWrap.style.display = 'block';
+        const now = new Date(Date.now() + 45 * 60 * 1000);
+        const pad = (n) => String(n).padStart(2, '0');
+        const formatted = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+        const input = document.getElementById('newExemptionCustomDate');
+        if (input && !input.value) input.value = formatted;
+      } else {
+        presetWrap.style.display = 'none';
+        customWrap.style.display = 'none';
+      }
+    }
+
+    function openExemptionQuickModal(keyword, target) {
+      const targetInput = document.getElementById('newExemptionTarget');
+      const reasonInput = document.getElementById('newExemptionReason');
+      if (targetInput) targetInput.value = keyword;
+      if (reasonInput) reasonInput.value = `Izin akses untuk ${target || keyword}`;
+      
+      const card = document.getElementById('cardExemptionManager');
+      if (card) {
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        card.style.transition = 'box-shadow 0.3s ease';
+        card.style.boxShadow = '0 0 25px rgba(52, 211, 153, 0.6)';
+        setTimeout(() => {
+          card.style.boxShadow = '0 4px 20px rgba(16, 185, 129, 0.15)';
+        }, 1500);
+      }
+    }
+
+    async function submitAddExemption() {
+      const targetInput = document.getElementById('newExemptionTarget');
+      const typeSelect = document.getElementById('newExemptionType');
+      const presetSelect = document.getElementById('newExemptionPresetMins');
+      const customDateInput = document.getElementById('newExemptionCustomDate');
+      const reasonInput = document.getElementById('newExemptionReason');
+
+      const target = targetInput ? targetInput.value.trim() : '';
+      if (!target) {
+        alert('Mohon isi target website / aplikasi atau kata kunci yang ingin dikecualikan.');
+        if (targetInput) targetInput.focus();
+        return;
+      }
+
+      const typeVal = typeSelect ? typeSelect.value : 'timed_preset';
+      let payload = {
+        target: target,
+        reason: reasonInput ? reasonInput.value.trim() : ''
+      };
+
+      if (typeVal === 'permanent') {
+        payload.exemption_type = 'permanent';
+      } else if (typeVal === 'timed_custom') {
+        payload.exemption_type = 'timed';
+        if (customDateInput && customDateInput.value) {
+          payload.expires_at = new Date(customDateInput.value).toISOString();
+        } else {
+          payload.duration_minutes = 45;
+        }
+      } else {
+        payload.exemption_type = 'timed';
+        payload.duration_minutes = parseInt(presetSelect ? presetSelect.value : '45', 10) || 45;
+      }
+
+      try {
+        const res = await authFetch('/api/policy/exemptions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || 'Gagal menambahkan pengecualian');
+        }
+        alert(data.message || 'Pengecualian berhasil diaktifkan!');
+        if (targetInput) targetInput.value = '';
+        if (reasonInput) reasonInput.value = '';
+        await fetchAppPolicy();
+      } catch (err) {
+        alert('Gagal: ' + err.message);
+      }
+    }
+
+    async function removeExemption(id, target) {
+      if (!confirm(`Cabut pengecualian untuk '${target}'? Akses akan kembali diblokir jika masuk dalam kebijakan lab.`)) return;
+      try {
+        const res = await authFetch('/api/policy/exemptions/remove', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, target })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Gagal mencabut pengecualian');
+        await fetchAppPolicy();
+      } catch (err) {
+        alert('Gagal: ' + err.message);
+      }
+    }
+
+    function renderExemptionsList() {
+      const container = document.getElementById('exemptionsTableContainer');
+      const badge = document.getElementById('exemptionActiveCountBadge');
+      if (!container) return;
+
+      const exemptions = (currentAppPolicy && currentAppPolicy.exemptions) ? currentAppPolicy.exemptions : [];
+      let activeCount = 0;
+      const now = Date.now();
+
+      for (const ex of exemptions) {
+        if (ex.exemption_type === 'permanent') {
+          activeCount++;
+        } else if (ex.expires_at) {
+          const expTime = new Date(ex.expires_at).getTime();
+          if (expTime > now) activeCount++;
+        }
+      }
+
+      if (badge) {
+        badge.innerText = `${activeCount} Pengecualian Aktif`;
+      }
+
+      if (exemptions.length === 0) {
+        container.innerHTML = '<div style="color: #64748b; font-size: 0.85rem; text-align: center; padding: 12px;">Belum ada aturan pengecualian aktif. Masukkan target di atas untuk menambahkan.</div>';
+        return;
+      }
+
+      container.innerHTML = exemptions.map(ex => {
+        const isPerm = ex.exemption_type === 'permanent';
+        const typeBadge = isPerm
+          ? '<span style="background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.4); padding: 2px 8px; border-radius: 999px; font-size: 0.72rem; font-weight: 600;"><i class="fa-solid fa-infinity"></i> Permanen</span>'
+          : '<span style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); padding: 2px 8px; border-radius: 999px; font-size: 0.72rem; font-weight: 600;"><i class="fa-solid fa-stopwatch"></i> Berbatas Waktu</span>';
+
+        return `
+          <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(30, 41, 59, 0.75); padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(16, 185, 129, 0.25); flex-wrap: wrap; gap: 10px;">
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <code style="background: #0f172a; color: #a7f3d0; padding: 3px 8px; border-radius: 4px; font-size: 0.92rem; border: 1px solid #1e293b; font-weight: 600;">${escapeHtml(ex.target)}</code>
+                ${typeBadge}
+                <span class="exemption-countdown" data-type="${escapeHtml(ex.exemption_type)}" data-expires="${escapeHtml(ex.expires_at || '')}" style="font-size: 0.8rem; font-weight: 600;"></span>
+              </div>
+              <div style="font-size: 0.78rem; color: #94a3b8;">
+                <i class="fa-regular fa-comment-dots"></i> ${escapeHtml(ex.reason || 'Pengecualian khusus Lab')}
+              </div>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <button class="btn-action" onclick="removeExemption('${escapeHtml(ex.id)}', '${escapeHtml(ex.target)}')" style="font-size: 0.75rem; padding: 5px 10px; color: #f87171; border-color: rgba(239, 68, 68, 0.35); background: rgba(239, 68, 68, 0.1);" title="Cabut izin pengecualian">
+                <i class="fa-solid fa-ban"></i> Cabut Izin
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      updateExemptionCountdowns();
+    }
+
+    function updateExemptionCountdowns() {
+      const elements = document.querySelectorAll('.exemption-countdown');
+      const now = Date.now();
+
+      elements.forEach(el => {
+        const type = el.getAttribute('data-type');
+        const expiresStr = el.getAttribute('data-expires');
+
+        if (type === 'permanent') {
+          el.innerHTML = '<span style="color: #4ade80;"><i class="fa-solid fa-check-double"></i> Akses Diizinkan Selamanya</span>';
+          return;
+        }
+
+        if (!expiresStr) {
+          el.innerHTML = '<span style="color: #94a3b8;">-</span>';
+          return;
+        }
+
+        const expTime = new Date(expiresStr).getTime();
+        const diffMs = expTime - now;
+
+        if (diffMs <= 0) {
+          el.innerHTML = '<span style="color: #f87171; background: rgba(239, 68, 68, 0.15); padding: 1px 6px; border-radius: 4px;"><i class="fa-solid fa-circle-xmark"></i> Kedaluwarsa (Pemblokiran Aktif)</span>';
+        } else {
+          const totalSec = Math.floor(diffMs / 1000);
+          const days = Math.floor(totalSec / 86400);
+          const hours = Math.floor((totalSec % 86400) / 3600);
+          const mins = Math.floor((totalSec % 3600) / 60);
+          const secs = totalSec % 60;
+
+          const pad = (n) => String(n).padStart(2, '0');
+          let timeDisplay = `${pad(hours)}:${pad(mins)}:${pad(secs)}`;
+          if (days > 0) {
+            timeDisplay = `${days}h ${timeDisplay}`;
+          }
+
+          el.innerHTML = `<span style="color: #34d399;"><i class="fa-solid fa-hourglass-half"></i> Sisa Waktu: <strong>${timeDisplay}</strong></span>`;
+        }
+      });
+    }
+
+    // Interval live countdown setiap detik
+    setInterval(updateExemptionCountdowns, 1000);
 
     async function fetchUsers() {
       try {
@@ -3398,6 +4382,9 @@ console.log('Ringkasan Siswa:', data.ringkasan);</pre>
         if (typeof cfg.auto_check_cloud === 'boolean' && document.getElementById('cfgAutoCheckCloud')) {
           document.getElementById('cfgAutoCheckCloud').checked = cfg.auto_check_cloud;
         }
+        if (typeof cfg.auto_sync_client === 'boolean' && document.getElementById('cfgAutoSyncClient')) {
+          document.getElementById('cfgAutoSyncClient').checked = cfg.auto_sync_client;
+        }
       } catch (err) {
         console.error("Gagal memuat konfigurasi update:", err);
       }
@@ -3411,7 +4398,8 @@ console.log('Ringkasan Siswa:', data.ringkasan);</pre>
         api_key: document.getElementById('cfgApiKey').value,
         client_binary_path: document.getElementById('cfgBinaryPath').value,
         cloud_manifest_url: document.getElementById('cfgCloudManifestUrl') ? document.getElementById('cfgCloudManifestUrl').value : undefined,
-        auto_check_cloud: document.getElementById('cfgAutoCheckCloud') ? document.getElementById('cfgAutoCheckCloud').checked : undefined
+        auto_check_cloud: document.getElementById('cfgAutoCheckCloud') ? document.getElementById('cfgAutoCheckCloud').checked : undefined,
+        auto_sync_client: document.getElementById('cfgAutoSyncClient') ? document.getElementById('cfgAutoSyncClient').checked : undefined
       };
 
       try {
@@ -3443,6 +4431,7 @@ console.log('Ringkasan Siswa:', data.ringkasan);</pre>
       try {
         const manifestUrl = document.getElementById('cfgCloudManifestUrl') ? document.getElementById('cfgCloudManifestUrl').value.trim() : '';
         const autoCheck = document.getElementById('cfgAutoCheckCloud') ? document.getElementById('cfgAutoCheckCloud').checked : true;
+        const autoSync = document.getElementById('cfgAutoSyncClient') ? document.getElementById('cfgAutoSyncClient').checked : false;
         
         await authFetch('/api/update/config', {
           method: 'POST',
@@ -3453,7 +4442,8 @@ console.log('Ringkasan Siswa:', data.ringkasan);</pre>
             api_key: document.getElementById('cfgApiKey').value,
             client_binary_path: document.getElementById('cfgBinaryPath').value,
             cloud_manifest_url: manifestUrl,
-            auto_check_cloud: autoCheck
+            auto_check_cloud: autoCheck,
+            auto_sync_client: autoSync
           })
         });
 

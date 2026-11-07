@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Molay Sekar7 - Portal Identitas & Pusat Unduhan Lab Komputer</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --bg-main: #0b1120;
+      --bg-card: #151f32;
+      --bg-card-hover: #1e2c45;
+      --border-color: #27354f;
+      --border-highlight: rgba(56, 189, 248, 0.35);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --primary: #38bdf8;
+      --primary-hover: #0284c7;
+      --emerald: #10b981;
+      --emerald-hover: #059669;
+      --amber: #f59e0b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      line-height: 1.6;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Header Nav */
+    header {
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-color);
+      padding: 14px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .brand-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+    }
+
+    .brand-icon {
+      width: 42px;
+      height: 42px;
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid var(--border-highlight);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary);
+      font-size: 1.3rem;
+    }
+
+    .brand-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: #fff;
+    }
+
+    .brand-subtitle {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-weight: 500;
+      display: block;
+    }
+
+    .header-nav {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .nav-link {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    .nav-link:hover {
+      color: var(--primary);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 18px;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: 1px solid transparent;
+    }
+
+    .btn-admin {
+      background: rgba(56, 189, 248, 0.12);
+      color: #7dd3fc;
+      border-color: rgba(56, 189, 248, 0.35);
+    }
+
+    .btn-admin:hover {
+      background: var(--primary);
+      color: #0b1120;
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.4);
+    }
+
+    .btn-primary {
+      background: #0284c7;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #0369a1;
+      transform: translateY(-1px);
+    }
+
+    .btn-emerald {
+      background: var(--emerald);
+      color: white;
+    }
+
+    .btn-emerald:hover {
+      background: var(--emerald-hover);
+      transform: translateY(-1px);
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      max-width: 1180px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+    }
+
+    /* Hero Section */
+    .hero {
+      text-align: center;
+      padding: 50px 20px 40px;
+      position: relative;
+    }
+
+    .badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid var(--border-highlight);
+      padding: 6px 16px;
+      border-radius: 9999px;
+      font-size: 0.82rem;
+      color: #7dd3fc;
+      font-weight: 600;
+      margin-bottom: 24px;
+    }
+
+    .hero h1 {
+      font-size: 2.6rem;
+      font-weight: 800;
+      line-height: 1.25;
+      margin-bottom: 18px;
+      background: linear-gradient(135deg, #ffffff 30%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero p {
+      font-size: 1.1rem;
+      color: var(--text-muted);
+      max-width: 720px;
+      margin: 0 auto 32px;
+    }
+
+    .hero-actions {
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    /* Status Bar Card */
+    .status-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 16px 24px;
+      margin: 36px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.88rem;
+    }
+
+    .status-indicator {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--emerald);
+      box-shadow: 0 0 10px var(--emerald);
+    }
+
+    /* Grid Features */
+    .section-title {
+      font-size: 1.6rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: #f8fafc;
+      text-align: center;
+    }
+
+    .section-desc {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      max-width: 600px;
+      margin: 0 auto 36px;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+      margin-bottom: 50px;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 26px 22px;
+      transition: all 0.2s ease;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-highlight);
+      transform: translateY(-3px);
+    }
+
+    .card-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      margin-bottom: 18px;
+    }
+
+    .icon-blue { background: rgba(56, 189, 248, 0.12); color: var(--primary); }
+    .icon-green { background: rgba(16, 185, 129, 0.12); color: var(--emerald); }
+    .icon-amber { background: rgba(245, 158, 11, 0.12); color: var(--amber); }
+    .icon-purple { background: rgba(168, 85, 247, 0.12); color: #c084fc; }
+
+    .card h3 {
+      font-size: 1.15rem;
+      margin-bottom: 10px;
+      color: #fff;
+    }
+
+    .card p {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      line-height: 1.55;
+    }
+
+    /* Download Box */
+    .download-box {
+      background: linear-gradient(145deg, #131c2e 0%, #0d1522 100%);
+      border: 1px solid var(--border-highlight);
+      border-radius: 16px;
+      padding: 36px 32px;
+      margin-bottom: 50px;
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
+    }
+
+    .download-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+      margin-top: 24px;
+    }
+
+    .dl-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .dl-badge {
+      align-self: flex-start;
+      padding: 3px 10px;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+
+    .dl-badge.client { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.4); }
+    .dl-badge.admin { background: rgba(56, 189, 248, 0.2); color: #7dd3fc; border: 1px solid rgba(56, 189, 248, 0.4); }
+
+    .dl-card h4 {
+      font-size: 1.2rem;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+
+    .dl-card p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+      flex: 1;
+    }
+
+    /* Admin Direct Callout */
+    .admin-callout {
+      background: rgba(56, 189, 248, 0.05);
+      border: 1px dashed var(--border-highlight);
+      border-radius: 12px;
+      padding: 24px;
+      text-align: center;
+      margin-top: 30px;
+    }
+
+    /* Footer */
+    footer {
+      background: #090d16;
+      border-top: 1px solid var(--border-color);
+      padding: 24px;
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    footer a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+
+    @media (max-width: 768px) {
+      .hero h1 { font-size: 2rem; }
+      .header-nav { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <a href="/" class="brand-wrap">
+      <div class="brand-icon">
+        <i class="fa-solid fa-desktop"></i>
+      </div>
+      <div>
+        <span class="brand-title">MOLAY SEKAR7</span>
+        <span class="brand-subtitle">Portal Resmi Lab Komputer SMP Kartini 7</span>
+      </div>
+    </a>
+
+    <div class="header-nav">
+      <a href="#tata-tertib" class="nav-link">Tata Tertib Siswa</a>
+      <a href="#unduh" class="nav-link">Pusat Unduhan</a>
+      <a href="https://monitoringmolay.sekolahkartini7.web.id" class="btn btn-admin" title="Khusus Guru dan Tim Lab">
+        <i class="fa-solid fa-lock"></i> Masuk Monitoring Guru
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main>
+    <!-- Hero Section -->
+    <section class="hero">
+      <div class="badge-pill">
+        <i class="fa-solid fa-shield-halved"></i> Sistem Monitoring Layar & Pembelajaran Digital
+      </div>
+      <h1>Laboratorium Komputer SMP Kartini 7</h1>
+      <p>
+        Portal identitas dan gerbang resmi sistem <strong>Molay Sekar7</strong>. Menunjang kegiatan praktikum informatika yang tertib, terpantau secara real-time, dan menjunjung tinggi integritas belajar siswa.
+      </p>
+      <div class="hero-actions">
+        <a href="#unduh" class="btn btn-emerald">
+          <i class="fa-solid fa-download"></i> Unduh Klien PC Siswa
+        </a>
+        <a href="https://monitoringmolay.sekolahkartini7.web.id" class="btn btn-admin">
+          <i class="fa-solid fa-chalkboard-user"></i> Akses Guru: monitoringmolay...
+        </a>
+      </div>
+    </section>
+
+    <!-- Status Card -->
+    <div class="status-card">
+      <div class="status-item">
+        <span class="status-indicator"></span>
+        <span>Status Jaringan Lab: <strong style="color: #34d399;">Online & Siap Pakai</strong></span>
+      </div>
+      <div class="status-item" style="color: var(--text-muted); font-size: 0.82rem;">
+        <i class="fa-solid fa-server" style="color: var(--primary);"></i>
+        <span>Alamat Server LAN Guru: <code style="color: #38bdf8; background: #0f172a; padding: 2px 8px; border-radius: 4px;">Port 1916 (Otomatis LAN)</code></span>
+      </div>
+      <div class="status-item" style="color: var(--text-muted); font-size: 0.82rem;">
+        <i class="fa-solid fa-globe" style="color: #c084fc;"></i>
+        <span>Portal Identitas: <strong style="color: #e2e8f0;">molay.sekolahkartini7.web.id</strong></span>
+      </div>
+    </div>
+
+    <!-- Tata Tertib & Aturan Penggunaan Lab -->
+    <section id="tata-tertib" style="margin-top: 20px;">
+      <h2 class="section-title">Tata Tertib & Etika Siswa di Lab Komputer</h2>
+      <p class="section-desc">
+        Seluruh siswa yang menggunakan komputer di lab diwajibkan mematuhi pedoman pembelajaran di bawah ini.
+      </p>
+
+      <div class="grid-4">
+        <!-- Card 1 -->
+        <div class="card">
+          <div class="card-icon icon-blue">
+            <i class="fa-solid fa-graduation-cap"></i>
+          </div>
+          <h3>Fokus Materi Pelajaran</h3>
+          <p>
+            Komputer lab hanya digunakan untuk materi pembelajaran Informatika, tugas dari guru pendamping, dan latihan praktikum yang relevan.
+          </p>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="card">
+          <div class="card-icon icon-green">
+            <i class="fa-solid fa-shield-cat"></i>
+          </div>
+          <h3>Proteksi Otomatis Lab</h3>
+          <p>
+            Sistem Molay secara otomatis membatasi permainan (game), software ilegal, dan situs non-edukasi selama jam belajar berlangsung.
+          </p>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="card">
+          <div class="card-icon icon-amber">
+            <i class="fa-solid fa-chart-line"></i>
+          </div>
+          <h3>Transparansi Aktivitas</h3>
+          <p>
+            Aplikasi dan situs yang dibuka siswa tercatat di sistem analisa untuk keperluan evaluasi produktivitas dan penilaian objektif oleh guru.
+          </p>
+        </div>
+
+        <!-- Card 4 -->
+        <div class="card">
+          <div class="card-icon icon-purple">
+            <i class="fa-solid fa-circle-question"></i>
+          </div>
+          <h3>Bebas Lapor Kendala</h3>
+          <p>
+            Jika siswa mengalami masalah teknis atau kendala login pada PC lab, siswa dapat menekan tombol laporkan kendala dari layar PC masing-masing.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Download Section -->
+    <section id="unduh" class="download-box">
+      <div style="text-align: center; margin-bottom: 24px;">
+        <h2 style="font-size: 1.6rem; color: #fff; margin-bottom: 8px;">
+          <i class="fa-solid fa-cloud-arrow-down" style="color: var(--primary);"></i> Pusat Unduhan Resmi Installer Molay Sekar7
+        </h2>
+        <p style="color: var(--text-muted); font-size: 0.95rem;">
+          Paket aplikasi resmi untuk PC lab siswa dan panduan teknis sekolah.
+        </p>
+      </div>
+
+      <div class="download-grid">
+        <!-- Card 1: PC Siswa -->
+        <div class="dl-card">
+          <div>
+            <span class="dl-badge client">PC Lab Siswa</span>
+            <h4>Molay Client (PC Siswa)</h4>
+            <p>
+              Installer setup otomatis untuk seluruh komputer lab siswa. Otomatis berjalan saat Windows dinyalakan dan menghubungkan PC ke server guru.
+            </p>
+          </div>
+          <a href="/dist/MolayClient-Sekar7-Setup.exe" class="btn btn-emerald" style="width: 100%; justify-content: center;">
+            <i class="fa-solid fa-download"></i> Unduh MolayClient-Sekar7-Setup.exe
+          </a>
+        </div>
+
+        <!-- Card 2: Akses Guru -->
+        <div class="dl-card">
+          <div>
+            <span class="dl-badge admin">Khusus Guru / Admin</span>
+            <h4>Dashboard Monitoring Guru</h4>
+            <p>
+              Akses khusus untuk Guru dan Tim Laboratorium Sekolah untuk memonitor layar, log aktivitas, dan mengontrol PC siswa.
+            </p>
+          </div>
+          <a href="https://monitoringmolay.sekolahkartini7.web.id" class="btn btn-admin" style="width: 100%; justify-content: center;">
+            <i class="fa-solid fa-arrow-up-right-from-square"></i> Buka monitoringmolay...
+          </a>
+        </div>
+      </div>
+
+      <!-- Admin Direct Link / Fallback -->
+      <div class="admin-callout">
+        <h4 style="color: #fff; font-size: 1.05rem; margin-bottom: 6px;">
+          <i class="fa-solid fa-user-shield" style="color: var(--primary);"></i> Anda adalah Guru / Administrator Lab?
+        </h4>
+        <p style="color: var(--text-muted); font-size: 0.88rem; max-width: 650px; margin: 0 auto 16px;">
+          Untuk menjaga kerahasiaan layar dan data belajar siswa, dashboard monitoring guru dilindungi oleh login ketat dan dialihkan ke subdomain privat:
+        </p>
+        <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+          <a href="https://monitoringmolay.sekolahkartini7.web.id" class="btn btn-primary">
+            <i class="fa-solid fa-lock"></i> Masuk via monitoringmolay.sekolahkartini7.web.id
+          </a>
+          <a href="/admin" class="btn" style="background: #1e293b; color: #f8fafc; border-color: #334155;">
+            <i class="fa-solid fa-arrow-right-to-bracket"></i> Rute Login Alternatif (/admin)
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <div style="max-width: 1180px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+      <div>
+        &copy; 2026 <strong>SMP Kartini 7 Batang & Pekalongan</strong> &bull; Sistem Pemantauan Lab Komputer Molay Sekar7
+      </div>
+      <div>
+        <a href="https://sekolahkartini7.web.id" target="_blank">Website Sekolah</a> &bull;
+        <a href="https://monitoringmolay.sekolahkartini7.web.id" target="_blank">Portal Guru</a>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

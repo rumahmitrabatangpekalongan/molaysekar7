@@ -121,12 +121,19 @@ pub async fn download_and_self_update(
     let current_exe = std::env::current_exe()
         .map_err(|e| format!("Gagal menentukan path executable saat ini: {}", e))?;
 
-    let new_exe = current_exe.with_extension("exe.new");
+    let temp_dir = std::env::temp_dir();
+    let preferred_new_exe = current_exe.with_extension("exe.new");
+    let fallback_new_exe = temp_dir.join("MolayClient-Sekar7.exe.new");
     let old_exe = current_exe.with_extension("exe.old");
 
-    // Simpan data unduhan ke .new
-    std::fs::write(&new_exe, &bytes)
-        .map_err(|e| format!("Gagal menyimpan file unduhan ke {:?}: {}", new_exe, e))?;
+    // Simpan data unduhan: coba simpan langsung di folder app, jika gagal coba simpan di %TEMP%
+    let new_exe = if std::fs::write(&preferred_new_exe, &bytes).is_ok() {
+        preferred_new_exe
+    } else {
+        std::fs::write(&fallback_new_exe, &bytes)
+            .map_err(|e| format!("Gagal menyimpan file unduhan baik di folder app maupun %TEMP%: {}", e))?;
+        fallback_new_exe
+    };
 
     println!("[UPDATER] Berhasil mengunduh {} bytes. Menerapkan pembaruan...", bytes.len());
 
@@ -135,53 +142,59 @@ pub async fn download_and_self_update(
         let _ = std::fs::remove_file(&old_exe);
     }
 
-    match std::fs::rename(&current_exe, &old_exe) {
-        Ok(_) => {
-            if let Err(e) = std::fs::rename(&new_exe, &current_exe) {
-                // Rollback jika gagal
-                let _ = std::fs::rename(&old_exe, &current_exe);
-                return Err(format!("Gagal menempatkan binary baru: {}. Perubahan di-rollback.", e));
+    let mut direct_replaced = false;
+    if std::fs::rename(&current_exe, &old_exe).is_ok() {
+        if std::fs::rename(&new_exe, &current_exe).is_ok() {
+            direct_replaced = true;
+        } else if std::fs::copy(&new_exe, &current_exe).is_ok() {
+            let _ = std::fs::remove_file(&new_exe);
+            direct_replaced = true;
+        } else {
+            // Rollback jika gagal
+            let _ = std::fs::rename(&old_exe, &current_exe);
+        }
+    }
+
+    if !direct_replaced {
+        eprintln!("[UPDATER WARNING] Penggantian langsung gagal. Mencoba elevated updater...");
+
+        // Jika rename langsung gagal (misal Access is denied / OS Error 5 di Program Files),
+        // buat skrip elevated helper untuk menyelesaikan penggantian file dengan hak Administrator
+        let batch_script = temp_dir.join("molay_apply_update.bat");
+        let script_content = format!(
+            "@echo off\r\n\
+             timeout /t 1 /nobreak >nul\r\n\
+             if exist \"{}\" del /f /q \"{}\" >nul 2>&1\r\n\
+             move /y \"{}\" \"{}\" >nul 2>&1\r\n\
+             move /y \"{}\" \"{}\" >nul 2>&1\r\n\
+             start \"\" \"{}\"\r\n\
+             del \"%~f0\"\r\n",
+            old_exe.display(),
+            old_exe.display(),
+            current_exe.display(),
+            old_exe.display(),
+            new_exe.display(),
+            current_exe.display(),
+            current_exe.display(),
+        );
+
+        if std::fs::write(&batch_script, script_content).is_ok() {
+            let spawn_res = std::process::Command::new("powershell")
+                .args([
+                    "-NoProfile",
+                    "-WindowStyle", "Hidden",
+                    "-Command",
+                    &format!("Start-Process cmd -ArgumentList '/c \"{}\"' -Verb RunAs", batch_script.display())
+                ])
+                .spawn();
+
+            if spawn_res.is_ok() {
+                println!("[UPDATER] Helper elevated updater dijalankan. Keluar untuk menerapkan pembaruan...");
+                std::process::exit(0);
             }
         }
-        Err(err) => {
-            eprintln!("[UPDATER WARNING] Rename langsung gagal ({}). Mencoba elevated updater...", err);
 
-            // Jika rename langsung gagal (misal Access is denied / OS Error 5 di Program Files),
-            // buat skrip elevated helper untuk menyelesaikan penggantian file dengan hak Administrator
-            let temp_dir = std::env::temp_dir();
-            let batch_script = temp_dir.join("molay_apply_update.bat");
-            let script_content = format!(
-                "@echo off\r\n\
-                 timeout /t 1 /nobreak >nul\r\n\
-                 move /y \"{}\" \"{}\" >nul 2>&1\r\n\
-                 move /y \"{}\" \"{}\" >nul 2>&1\r\n\
-                 start \"\" \"{}\"\r\n\
-                 del \"%~f0\"\r\n",
-                current_exe.display(),
-                old_exe.display(),
-                new_exe.display(),
-                current_exe.display(),
-                current_exe.display(),
-            );
-
-            if std::fs::write(&batch_script, script_content).is_ok() {
-                let spawn_res = std::process::Command::new("powershell")
-                    .args([
-                        "-NoProfile",
-                        "-WindowStyle", "Hidden",
-                        "-Command",
-                        &format!("Start-Process cmd -ArgumentList '/c \"{}\"' -Verb RunAs", batch_script.display())
-                    ])
-                    .spawn();
-
-                if spawn_res.is_ok() {
-                    println!("[UPDATER] Helper elevated updater dijalankan. Keluar untuk menerapkan pembaruan...");
-                    std::process::exit(0);
-                }
-            }
-
-            return Err(format!("Gagal memindahkan file aktif ke {:?}: {}", old_exe, err));
-        }
+        return Err(format!("Gagal memindahkan file aktif ke {:?}", old_exe));
     }
 
     println!("[UPDATER] Pembaruan berhasil diterapkan! Me-restart aplikasi ke versi baru...");

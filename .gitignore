@@ -38,3 +38,6 @@ venv/
 *.log
 sessions.json
 global_error_logs.jsonl
+ai_detector_config.json
+hasil_review_lokal.md
+

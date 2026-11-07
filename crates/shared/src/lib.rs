@@ -249,6 +249,62 @@ impl Default for BrowserRedirectRule {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct PolicyExemption {
+    #[serde(default = "default_exemption_id")]
+    pub id: String,
+    pub target: String,
+    #[serde(default = "default_permanent")]
+    pub exemption_type: String, // "permanent" | "timed"
+    #[serde(default)]
+    pub expires_at: Option<String>, // ISO-8601 string: e.g. "2026-11-05T15:30:00Z"
+    #[serde(default = "default_now_iso")]
+    pub created_at: String,
+    #[serde(default)]
+    pub reason: String,
+}
+
+pub fn default_exemption_id() -> String {
+    format!("ex-{}", chrono::Utc::now().timestamp_millis())
+}
+
+pub fn default_permanent() -> String {
+    "permanent".to_string()
+}
+
+pub fn default_now_iso() -> String {
+    chrono::Utc::now().to_rfc3339()
+}
+
+impl PolicyExemption {
+    pub fn is_active(&self) -> bool {
+        if self.exemption_type == "permanent" {
+            return true;
+        }
+        if let Some(ref exp) = self.expires_at {
+            if let Ok(exp_dt) = chrono::DateTime::parse_from_rfc3339(exp) {
+                return chrono::Utc::now() < exp_dt;
+            }
+            if let Ok(naive) = chrono::NaiveDateTime::parse_from_str(exp, "%Y-%m-%dT%H:%M:%S") {
+                return chrono::Utc::now().naive_utc() < naive;
+            }
+            if let Ok(naive) = chrono::NaiveDateTime::parse_from_str(exp, "%Y-%m-%d %H:%M:%S") {
+                return chrono::Utc::now().naive_utc() < naive;
+            }
+        }
+        false
+    }
+
+    pub fn matches(&self, candidate: &str) -> bool {
+        let c = candidate.trim().to_lowercase();
+        let t = self.target.trim().to_lowercase();
+        if t.is_empty() || c.is_empty() {
+            return false;
+        }
+        c.contains(&t) || t.contains(&c)
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct AppPolicyConfig {
     pub block_installers: bool,
     pub alert_on_installer: bool,
@@ -256,6 +312,37 @@ pub struct AppPolicyConfig {
     pub blocked_keywords: Vec<String>,
     #[serde(default)]
     pub browser_redirect: Option<BrowserRedirectRule>,
+    #[serde(default)]
+    pub exemptions: Vec<PolicyExemption>,
+}
+
+impl AppPolicyConfig {
+    pub fn is_exempt(&self, app_name: &str, window_title: &str) -> bool {
+        let lower_app = app_name.trim().to_lowercase();
+        let lower_title = window_title.trim().to_lowercase();
+        for ex in &self.exemptions {
+            if ex.is_active() {
+                let t = ex.target.trim().to_lowercase();
+                if !t.is_empty() && (lower_app.contains(&t) || lower_title.contains(&t) || t.contains(&lower_app)) {
+                    return true;
+                }
+            }
+        }
+        false
+    }
+
+    pub fn is_keyword_exempt(&self, keyword: &str) -> bool {
+        let lower_kw = keyword.trim().to_lowercase();
+        for ex in &self.exemptions {
+            if ex.is_active() {
+                let t = ex.target.trim().to_lowercase();
+                if !t.is_empty() && (lower_kw.contains(&t) || t.contains(&lower_kw)) {
+                    return true;
+                }
+            }
+        }
+        false
+    }
 }
 
 impl Default for AppPolicyConfig {
@@ -284,6 +371,7 @@ impl Default for AppPolicyConfig {
                 "Steam".to_string(),
             ],
             browser_redirect: Some(BrowserRedirectRule::default()),
+            exemptions: Vec::new(),
         }
     }
 }
@@ -726,8 +814,9 @@ mod tests {
         assert!(policy.block_installers);
         assert_eq!(policy.blocked_apps.len(), 1);
         assert_eq!(policy.browser_redirect, None);
+        assert!(policy.exemptions.is_empty());
 
-        // New JSON format with browser_redirect
+        // New JSON format with browser_redirect and exemptions
         let rule = BrowserRedirectRule {
             enabled: true,
             trigger_keywords: vec!["poki".to_string()],
@@ -743,12 +832,81 @@ mod tests {
             blocked_apps: vec!["steam.exe".to_string()],
             blocked_keywords: vec!["Roblox".to_string()],
             browser_redirect: Some(rule),
+            exemptions: vec![
+                PolicyExemption {
+                    id: "ex-1".to_string(),
+                    target: "poki.com".to_string(),
+                    exemption_type: "permanent".to_string(),
+                    expires_at: None,
+                    created_at: "2026-11-05T00:00:00Z".to_string(),
+                    reason: "Tugas Coding".to_string(),
+                }
+            ],
         };
         let json = serde_json::to_string(&new_policy).unwrap();
         assert!(json.contains("\"browser_redirect\""));
         assert!(json.contains("\"poki\""));
+        assert!(json.contains("\"exemptions\""));
         let parsed: AppPolicyConfig = serde_json::from_str(&json).unwrap();
         assert!(parsed.browser_redirect.is_some());
         assert!(parsed.browser_redirect.unwrap().enabled);
+        assert_eq!(parsed.exemptions.len(), 1);
+        assert_eq!(parsed.exemptions[0].target, "poki.com");
+    }
+
+    #[test]
+    fn test_policy_exemption_logic() {
+        // 1. Permanent exemption
+        let perm = PolicyExemption {
+            id: "perm-1".to_string(),
+            target: "poki.com".to_string(),
+            exemption_type: "permanent".to_string(),
+            expires_at: None,
+            created_at: "2026-11-05T00:00:00Z".to_string(),
+            reason: "Lab Test".to_string(),
+        };
+        assert!(perm.is_active());
+
+        // 2. Timed exemption - Future
+        let future_time = (chrono::Utc::now() + chrono::Duration::hours(2)).to_rfc3339();
+        let timed_active = PolicyExemption {
+            id: "timed-1".to_string(),
+            target: "crazygames".to_string(),
+            exemption_type: "timed".to_string(),
+            expires_at: Some(future_time),
+            created_at: "2026-11-05T00:00:00Z".to_string(),
+            reason: "Jam Pelajaran 1".to_string(),
+        };
+        assert!(timed_active.is_active());
+
+        // 3. Timed exemption - Past / Expired
+        let past_time = (chrono::Utc::now() - chrono::Duration::minutes(10)).to_rfc3339();
+        let timed_expired = PolicyExemption {
+            id: "timed-2".to_string(),
+            target: "roblox.com".to_string(),
+            exemption_type: "timed".to_string(),
+            expires_at: Some(past_time),
+            created_at: "2026-11-05T00:00:00Z".to_string(),
+            reason: "Jam Pelajaran Selesai".to_string(),
+        };
+        assert!(!timed_expired.is_active());
+
+        // 4. AppPolicyConfig::is_exempt
+        let policy = AppPolicyConfig {
+            exemptions: vec![perm, timed_active, timed_expired],
+            ..Default::default()
+        };
+
+        // Permitted by permanent
+        assert!(policy.is_exempt("chrome.exe", "Main Poki.com Seru Banget"));
+        assert!(policy.is_keyword_exempt("poki.com"));
+
+        // Permitted by active timed
+        assert!(policy.is_exempt("edge.exe", "Crazygames Action"));
+        assert!(policy.is_keyword_exempt("crazygames"));
+
+        // Blocked because expired!
+        assert!(!policy.is_exempt("chrome.exe", "Roblox.com Games"));
+        assert!(!policy.is_keyword_exempt("roblox.com"));
     }
 }

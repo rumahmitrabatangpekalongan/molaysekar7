@@ -53,11 +53,11 @@ echo IP Komputer Guru di Jaringan LAN:
 ipconfig | findstr /i "IPv4"
 echo.
 echo ========================================================
-echo  Dashboard Web Guru:
-echo  - Akses Lokal / LAN : http://localhost:1916
-echo  - Akses Internet    : https://molay.sekolahkartini7.web.id
-echo  - Analisa Aktivitas : http://localhost:1916/analisaaktivitas
-echo                      : https://molay.sekolahkartini7.web.id/analisaaktivitas
+echo  Portal & Akses Web Molay Sekar7:
+echo  - Portal Identitas Publik : https://molay.sekolahkartini7.web.id
+echo  - Akses Monitoring Guru  : https://monitoringmolay.sekolahkartini7.web.id
+echo  - Akses Lokal / LAN Guru  : http://localhost:1916
+echo  - Laporan Analisa Siswa   : http://localhost:1916/analisaaktivitas
 echo ========================================================
 echo.
 

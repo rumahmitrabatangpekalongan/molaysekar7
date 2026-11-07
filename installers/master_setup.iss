@@ -77,6 +77,7 @@ Source: "..\dist\Molay-Server\update_config.json"; DestDir: "{app}\Server"; Comp
 Source: "..\dist\Molay-Server\app_policy.json"; DestDir: "{app}\Server"; Components: server; Flags: onlyifdoesntexist uninsneveruninstall
 Source: "..\dist\Molay-Server\client_auth_mode.json"; DestDir: "{app}\Server"; Components: server; Flags: onlyifdoesntexist uninsneveruninstall
 Source: "..\dist\Molay-Server\service_keys.json"; DestDir: "{app}\Server"; Components: server; Flags: onlyifdoesntexist uninsneveruninstall
+Source: "..\dist\Molay-Server\.env"; DestDir: "{app}\Server"; Components: server; Flags: onlyifdoesntexist uninsneveruninstall
 Source: "..\dist\Molay-Server\analisis\*"; DestDir: "{app}\Server\analisis"; Components: server; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]

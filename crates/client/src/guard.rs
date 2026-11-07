@@ -64,6 +64,11 @@ pub fn check_blocked_app(
         return None;
     }
 
+    // Abaikan jika aplikasi atau judul jendela masuk dalam pengecualian aktif (Exemption / Whitelist)
+    if policy.is_exempt(app_name, window_title) {
+        return None;
+    }
+
     // Cek daftar executable yang dilarang
     for blocked in &policy.blocked_apps {
         let b = blocked.trim().to_lowercase();
@@ -244,12 +249,13 @@ mod tests {
 
     #[test]
     fn test_blocked_app_detection() {
-        let policy = AppPolicyConfig {
+        let mut policy = AppPolicyConfig {
             block_installers: true,
             alert_on_installer: true,
             blocked_apps: vec!["roblox.exe".into(), "steam.exe".into()],
             blocked_keywords: vec!["Cheat Engine".into(), "Roblox".into()],
             browser_redirect: None,
+            exemptions: Vec::new(),
         };
 
         // Harus terblokir jika nama proses sama
@@ -266,5 +272,19 @@ mod tests {
         assert!(check_blocked_app("notepad.exe", "Tugas Sekolah.txt", &policy).is_none());
         assert!(check_blocked_app("code.exe", "Visual Studio Code", &policy).is_none());
         assert!(check_blocked_app("explorer.exe", "Desktop", &policy).is_none());
+
+        // Uji Pengecualian Akses (Exemption)
+        policy.exemptions.push(shared::PolicyExemption {
+            id: "ex-roblox".to_string(),
+            target: "roblox.exe".to_string(),
+            exemption_type: "permanent".to_string(),
+            expires_at: None,
+            created_at: "2026-11-05T00:00:00Z".to_string(),
+            reason: "Tugas Coding Roblox Studio".to_string(),
+        });
+        // roblox.exe sekarang lolos karena dikecualikan
+        assert!(check_blocked_app("roblox.exe", "Game", &policy).is_none());
+        // steam.exe tetap terblokir
+        assert!(check_blocked_app("steam.exe", "Steam Store", &policy).is_some());
     }
 }

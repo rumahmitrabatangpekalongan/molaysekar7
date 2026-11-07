@@ -169,22 +169,37 @@ pub fn parse_endpoints(content: &str) -> Vec<ServerEndpoint> {
 
 pub async fn discover_lan_server_ip(timeout_ms: u64) -> Option<String> {
     // Prioritas 0: Cek PARALEL semua server yang dikenal secara bersamaan dan pilih yang TERCEPAT merespons.
-    // Strategi ini memungkinkan distribusi klien yang merata ke beberapa server aktif (192.168.20.70 & 192.168.20.100)
-    // dibandingkan urutan serial yang selalu memilih server pertama dalam daftar.
-    let known_superadmins = ["127.0.0.1:1916", "192.168.20.70:1916", "192.168.20.100:1916"];
+    // Strategi ini memungkinkan deteksi instan (< 400ms) saat Server Guru aktif di LAN.
+    let mut known_targets = vec![
+        "127.0.0.1:1916".to_string(),
+        "192.168.20.70:1916".to_string(),
+        "192.168.20.100:1916".to_string(),
+    ];
 
-    let (tx, mut rx) = tokio::sync::mpsc::channel::<String>(known_superadmins.len());
-    for target in known_superadmins {
+    if let Some(local_ip) = get_local_lan_ip() {
+        let oct = local_ip.octets();
+        let gw = format!("{}.{}.{}.1:1916", oct[0], oct[1], oct[2]);
+        if !known_targets.contains(&gw) {
+            known_targets.push(gw);
+        }
+        let own = format!("{}.{}.{}.{}:1916", oct[0], oct[1], oct[2], oct[3]);
+        if !known_targets.contains(&own) {
+            known_targets.push(own);
+        }
+    }
+
+    let (tx, mut rx) = tokio::sync::mpsc::channel::<String>(known_targets.len());
+    for target in known_targets {
         let tx = tx.clone();
         tokio::spawn(async move {
             let res = tokio::time::timeout(
                 Duration::from_millis(350),
-                tokio::net::TcpStream::connect(target),
+                tokio::net::TcpStream::connect(&target),
             )
             .await;
             if let Ok(Ok(_)) = res {
                 // Kirim hasilnya; channel sudah bounded jadi tidak ada blocking
-                let _ = tx.send(target.to_string()).await;
+                let _ = tx.send(target).await;
             }
         });
     }
@@ -194,7 +209,7 @@ pub async fn discover_lan_server_ip(timeout_ms: u64) -> Option<String> {
     // Ambil respons pertama (server tercepat) dalam batas waktu 400ms
     match tokio::time::timeout(Duration::from_millis(400), rx.recv()).await {
         Ok(Some(fastest)) => {
-            println!("[DISCOVERY] ✅ Server tercepat merespons: {}", fastest);
+            println!("[DISCOVERY] ✅ Server LAN tercepat merespons: {}", fastest);
             return Some(fastest);
         }
         _ => {} // Tidak ada yang merespons, lanjut ke strategi berikutnya

@@ -1,9 +1,9 @@
 @echo off
-title MOLAY SEKAR7 - COMPILER INSTALLER SETUP WIZARD
+title MOLAY SEKAR7 - BUILD RELEASE & INSTALLER OTOMATIS
 cd /d "%~dp0"
 
 echo ========================================================
-echo       MOLAY SEKAR7 - MEMBUAT SOFTWARE INSTALLER (.EXE)
+echo   MOLAY SEKAR7 - BUILD OTOMATIS BINARY & INSTALLER (.EXE)
 echo ========================================================
 echo.
 
@@ -16,35 +16,56 @@ if not exist %ISCC% (
 
 if not exist dist\Installers mkdir dist\Installers
 
-echo [1/2] Membuat Installer Klien Siswa (MolayClient-Sekar7-Setup.exe)...
-%ISCC% installers\client_setup.iss
+echo [1/4] Mengompilasi Binary Rust Release (Server & Klien)...
+cargo build --release
+if errorlevel 1 (
+    echo [GAGAL] Gagal mengompilasi program Rust.
+    pause
+    exit /b 1
+)
+
+echo.
+echo [2/4] Memperbarui file binary di folder dist...
+if exist target\release\MolayServer-Sekar7.exe (
+    copy /y target\release\MolayServer-Sekar7.exe dist\Molay-Server\ >nul
+    echo       [OK] dist\Molay-Server\MolayServer-Sekar7.exe diperbarui.
+)
+if exist target\release\MolayClient-Sekar7.exe (
+    copy /y target\release\MolayClient-Sekar7.exe dist\Molay-Client\ >nul
+    echo       [OK] dist\Molay-Client\MolayClient-Sekar7.exe diperbarui.
+)
+
+echo.
+echo [3/4] Membuat Installer Klien Siswa (MolayClient-Sekar7-Setup.exe)...
+%ISCC% installers\client_setup.iss >nul
 if errorlevel 1 (
     echo [GAGAL] Gagal membuat installer klien.
     pause
     exit /b 1
 )
+echo       [OK] dist\Installers\MolayClient-Sekar7-Setup.exe siap!
 
 echo.
-echo [2/3] Membuat Installer Server Guru (MolayServer-Sekar7-Setup.exe)...
-%ISCC% installers\server_setup.iss
+echo [4/4] Membuat Installer Server Guru & Paket Lengkap...
+%ISCC% installers\server_setup.iss >nul
 if errorlevel 1 (
     echo [GAGAL] Gagal membuat installer server.
     pause
     exit /b 1
 )
+echo       [OK] dist\Installers\MolayServer-Sekar7-Setup.exe siap!
 
-echo.
-echo [3/3] Membuat Installer ALL-IN-ONE Lengkap (Molay-Sekar7-Setup-Lengkap.exe)...
-%ISCC% installers\master_setup.iss
+%ISCC% installers\master_setup.iss >nul
 if errorlevel 1 (
-    echo [GAGAL] Gagal membuat installer lengkap.
+    echo [GAGAL] Gagal membuat installer paket lengkap.
     pause
     exit /b 1
 )
+echo       [OK] dist\Installers\Molay-Sekar7-Setup-Lengkap.exe siap!
 
 echo.
 echo ========================================================
-echo   SUKSES! Semua software installer berhasil dibuat di:
+echo   SUKSES! Seluruh binary dan installer terbaru siap di:
 echo   dist\Installers\
 echo ========================================================
 pause

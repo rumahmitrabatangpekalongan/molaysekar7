@@ -26,7 +26,7 @@ import urllib.error
 
 SUMOPOD_URL = "https://ai.sumopod.com/v1/chat/completions"
 MODEL_NAME = "glm-5.3-flash"
-API_KEY = os.environ.get("OPENAI_KEY") or os.environ.get("OPENAI_API_KEY") or "sk-FylbQDJ7-YRQOrsXSO1B9w"
+API_KEY = os.environ.get("OPENAI_KEY") or os.environ.get("OPENAI_API_KEY") or "sk-C0epKR02pvy95P4etwAe2A"
 
 SYSTEM_PROMPT = """Kamu adalah Senior Software Engineer dan Gatekeeper Kode dengan standar ZERO REGRESSION mutlak.
 Tugasmu adalah menganalisis setiap perubahan kode (git diff) secara mendalam, kritis, dan teliti sebelum kode diizinkan masuk ke branch utama.
@@ -67,16 +67,28 @@ FORMAT LAPORAN REVIEW:
 
 def get_git_diff():
     try:
-        # Coba ambil diff working tree terhadap HEAD
-        result = subprocess.run(
-            ["git", "diff", "HEAD"],
+        targets = sys.argv[1:] if len(sys.argv) > 1 else ["*.rs"]
+        # Prioritaskan audit pada target yang ditentukan atau file logic Rust (.rs)
+        result_rs = subprocess.run(
+            ["git", "diff", "HEAD", "--"] + targets,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
             encoding="utf-8",
             errors="replace"
         )
-        diff = result.stdout
+        diff = result_rs.stdout
+        if not diff.strip():
+            # Coba ambil diff keseluruhan working tree terhadap HEAD
+            result = subprocess.run(
+                ["git", "diff", "HEAD"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                encoding="utf-8",
+                errors="replace"
+            )
+            diff = result.stdout
         if not diff.strip():
             # Jika tidak ada diff terhadap HEAD, periksa diff staged
             result_staged = subprocess.run(
@@ -88,13 +100,15 @@ def get_git_diff():
                 errors="replace"
             )
             diff = result_staged.stdout
+        if len(diff) > 4000:
+            diff = diff[:4000] + "\n\n... [DIFF DIPERSINGKAT AGAR RESPON CEPAT DARI SUMOPOD AI]"
         return diff
     except Exception as e:
         print(f"[ERROR] Gagal menjalankan git diff: {e}")
         return ""
 
 def analyze_with_sumopod(diff_content):
-    prompt = f"Berikut adalah perubahan kode (git diff) yang akan diaudit:\n\n```diff\n{diff_content}\n```\n\nLakukan analisis audit mendalam sesuai instruksi Zero Regression."
+    prompt = f"Berikut adalah perubahan kode (git diff) yang akan diaudit:\n\n```diff\n{diff_content}\n```\n\nLakukan analisis audit Zero Regression secara to-the-point dan ringkas."
 
     payload = {
         "model": MODEL_NAME,
@@ -103,7 +117,7 @@ def analyze_with_sumopod(diff_content):
             {"role": "user", "content": prompt}
         ],
         "temperature": 0.2,
-        "max_tokens": 2500
+        "max_tokens": 3000
     }
 
     headers = {
@@ -120,9 +134,17 @@ def analyze_with_sumopod(diff_content):
     print(f"[*] Menghubungi SumoPod AI ({MODEL_NAME})...")
     with urllib.request.urlopen(req, timeout=120) as response:
         result = json.loads(response.read().decode("utf-8"))
-        return result["choices"][0]["message"]["content"]
+        msg = result["choices"][0]["message"]
+        content = msg.get("content") or msg.get("reasoning_content") or ""
+        return content
 
 def main():
+    if hasattr(sys.stdout, 'reconfigure'):
+        try:
+            sys.stdout.reconfigure(encoding='utf-8')
+        except Exception:
+            pass
+
     print("=" * 70)
     print("   ZERO REGRESSION CODE REVIEWER (SumoPod AI Engine)")
     print("=" * 70)
@@ -137,9 +159,11 @@ def main():
     try:
         review_result = analyze_with_sumopod(diff)
         output_file = "hasil_review_lokal.md"
+        from datetime import datetime
+        tanggal_sekarang = datetime.now().strftime("%d/%m/%Y")
         with open(output_file, "w", encoding="utf-8") as f:
             f.write("# Hasil Audit Kode - Zero Regression Review\n\n")
-            f.write(f"> **Engine:** SumoPod AI (`{MODEL_NAME}`) | **Tanggal:** {subprocess.run(['date', '/t'], shell=True, stdout=subprocess.PIPE, text=True).stdout.strip()}\n\n")
+            f.write(f"> **Engine:** SumoPod AI (`{MODEL_NAME}`) | **Tanggal:** {tanggal_sekarang}\n\n")
             f.write(review_result)
 
         print("\n" + "=" * 70)

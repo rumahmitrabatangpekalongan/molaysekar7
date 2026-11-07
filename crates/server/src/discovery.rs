@@ -85,10 +85,10 @@ pub async fn start_udp_discovery_responder(port: u16) {
         }
         let announce_msg = format!("MOLAY_ANNOUNCE:{}", port);
         loop {
-            sleep(Duration::from_secs(5)).await;
             for target in &broadcast_targets {
                 let _ = s_tx.send_to(announce_msg.as_bytes(), target).await;
             }
+            sleep(Duration::from_secs(3)).await;
         }
     });
 }

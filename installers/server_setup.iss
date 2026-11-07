@@ -50,6 +50,7 @@ Source: "..\dist\Molay-Server\update_config.json"; DestDir: "{app}"; Flags: only
 Source: "..\dist\Molay-Server\app_policy.json"; DestDir: "{app}"; Flags: onlyifdoesntexist uninsneveruninstall
 Source: "..\dist\Molay-Server\client_auth_mode.json"; DestDir: "{app}"; Flags: onlyifdoesntexist uninsneveruninstall
 Source: "..\dist\Molay-Server\service_keys.json"; DestDir: "{app}"; Flags: onlyifdoesntexist uninsneveruninstall
+Source: "..\dist\Molay-Server\.env"; DestDir: "{app}"; Flags: onlyifdoesntexist uninsneveruninstall
 Source: "..\dist\Molay-Server\analisis\*"; DestDir: "{app}\analisis"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
